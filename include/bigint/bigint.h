@@ -138,7 +138,7 @@ namespace bigint {
         template<std::size_t other_bits, bool other_is_signed>
         void init(bigint<other_bits, other_is_signed> other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
-            if (other_is_signed && other < 0) {
+            if (other_is_signed && other < static_cast<std::int8_t>(0)) {
                 std::fill_n(data_.data(), data_.size(), 0xFF);
             } else {
                 std::fill_n(data_.data(), data_.size(), 0);
@@ -174,11 +174,7 @@ namespace bigint {
                         throw std::runtime_error("Cannot initialize an unsigned bigint with a negative value.");
                     }
                     init_from_string_base(&data[1], N - 2, 10);
-                    for (auto &byte: data_) {
-                        byte = ~byte;
-                    }
-                    bigint one(1);
-                    *this += one;
+                    *this = -*this;
                 } else {
                     init_from_string_base(data, N - 1, 10);
                 }
@@ -538,50 +534,71 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         bigint &operator*=(bigint<other_bits, other_is_signed> const &other) {
-            constexpr std::size_t this_size = bits / CHAR_BIT;
-            constexpr std::size_t other_size = other_bits / CHAR_BIT;
-            bigint result(0);
+            bool negative_result = false;
+            bigint abs_this(*this);
+            bigint abs_other(other);
+
+            if constexpr (is_signed) {
+                if (*this < static_cast<int8_t>(0)) {
+                    negative_result = !negative_result;
+                    abs_this = -abs_this;
+                }
+            }
+            if constexpr (other_is_signed) {
+                if (other < static_cast<int8_t>(0)) {
+                    negative_result = !negative_result;
+                    abs_other = -abs_other;
+                }
+            }
+
+            constexpr std::size_t n = bits / CHAR_BIT;
+            constexpr std::size_t m = other_bits / CHAR_BIT;
+            bigint result(static_cast<std::int8_t>(0));
 
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < this_size; ++i) {
+                for (std::size_t i = 0; i < n; ++i) {
                     std::uint16_t carry = 0;
-                    for (std::size_t j = 0; j < other_size; ++j) {
-                        if (i + j >= this_size) {
+                    for (std::size_t j = 0; j < m; ++j) {
+                        if (i + j >= n) {
                             break;
                         }
-                        std::uint32_t product = static_cast<std::uint32_t>(data_[i]) *
-                                                static_cast<std::uint32_t>(other.data_[j]);
+                        std::uint32_t product = static_cast<std::uint32_t>(abs_this.data_[i]) *
+                                                static_cast<std::uint32_t>(abs_other.data_[j]);
                         product += static_cast<std::uint32_t>(result.data_[i + j]) + carry;
                         result.data_[i + j] = static_cast<std::uint8_t>(product & 0xFF);
                         carry = product >> 8;
                     }
-                    if (i + other_size < this_size) {
-                        std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[i + other_size]) + carry;
-                        result.data_[i + other_size] = static_cast<std::uint8_t>(sum & 0xFF);
+                    if (i + m < n) {
+                        std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[i + m]) + carry;
+                        result.data_[i + m] = static_cast<std::uint8_t>(sum & 0xFF);
                     }
                 }
             } else {
-                for (std::size_t i = 0; i < this_size; ++i) {
-                    std::size_t idx1 = this_size - 1 - i;
+                for (std::size_t i = 0; i < n; ++i) {
+                    std::size_t const idx1 = n - 1 - i;
                     std::uint16_t carry = 0;
-                    for (std::size_t j = 0; j < other_size; ++j) {
-                        if (i + j >= this_size) {
+                    for (std::size_t j = 0; j < m; ++j) {
+                        if (i + j >= n) {
                             break;
                         }
-                        std::size_t idx2 = other_size - 1 - j;
-                        std::size_t result_idx = this_size - 1 - (i + j);
-                        std::uint32_t product = static_cast<std::uint32_t>(data_[idx1]) *
-                                                static_cast<std::uint32_t>(other.data_[idx2]);
+                        std::size_t const idx2 = m - 1 - j;
+                        std::size_t const result_idx = n - 1 - (i + j);
+                        std::uint32_t product = static_cast<std::uint32_t>(abs_this.data_[idx1]) *
+                                                static_cast<std::uint32_t>(abs_other.data_[idx2]);
                         product += static_cast<std::uint32_t>(result.data_[result_idx]) + carry;
                         result.data_[result_idx] = static_cast<std::uint8_t>(product & 0xFF);
                         carry = product >> 8;
                     }
-                    if (i + other_size < this_size) {
-                        std::size_t result_idx = this_size - 1 - (i + other_size);
+                    if (i + m < n) {
+                        std::size_t result_idx = n - 1 - (i + m);
                         std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[result_idx]) + carry;
                         result.data_[result_idx] = static_cast<std::uint8_t>(sum & 0xFF);
                     }
                 }
+            }
+
+            if (negative_result) {
+                result = -result;
             }
             *this = result;
             return *this;
@@ -861,6 +878,15 @@ namespace bigint {
         [[nodiscard]] bigint operator>>(std::size_t const shift) const {
             bigint result(*this);
             result >>= shift;
+            return result;
+        }
+
+        [[nodiscard]] bigint operator-() const {
+            bigint result(*this);
+            for (auto &byte: result.data_) {
+                byte = ~byte;
+            }
+            result += static_cast<int8_t>(1);
             return result;
         }
 

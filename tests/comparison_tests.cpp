@@ -60,5 +60,8 @@ namespace {
         ASSERT_LT(c, d);
         int128_t const e = -124592;
         ASSERT_LT(e, d);
+        int128_t const f = static_cast<int64_t>(0x43);
+        ASSERT_GT(f, a);
+        ASSERT_LT(a, f);
     }
 }

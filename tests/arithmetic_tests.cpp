@@ -47,6 +47,8 @@ namespace {
     TEST(bigint, multiplication_with_bigint_test) {
         using i32 = bigint::bigint<32, true>;
         using u32 = bigint::bigint<32, false>;
+        using i16 = bigint::bigint<16, true>;
+        using u16 = bigint::bigint<16, false>;
         u32 const a = 42;
         u32 const b = 43;
         ASSERT_EQ(a * b, 1806);
@@ -56,6 +58,10 @@ namespace {
         ASSERT_EQ(d * 2, 0xFFFFFFFE);
         i32 const e = 42;
         ASSERT_EQ(e * -2, -84);
+        i16 const f = static_cast<std::int16_t>(-42);
+        i16 const g = static_cast<std::int16_t>(-42);
+        ASSERT_EQ(e * f, -1764);
+        ASSERT_EQ(f * g, static_cast<std::int16_t>(1764));
     }
 
     TEST(bigint, subtraction_with_integral_test) {
@@ -145,8 +151,17 @@ namespace {
         u32 const a = 42;
         ASSERT_EQ(a >> 2, 10);
         ASSERT_EQ(a << 2, 168);
+        ASSERT_EQ(a >> 0, 42);
+        ASSERT_EQ(a << 0, 42);
+        ASSERT_EQ(a >> 64, 0);
+        ASSERT_EQ(a << 8, 10752);
+        u32 const b = 10752;
+        ASSERT_EQ(b >> 8, 42);
         i32 const c = -42;
         ASSERT_EQ(c >> 2, -11);
         ASSERT_EQ(c << 2, -168);
+        ASSERT_EQ(c >> 0, -42);
+        ASSERT_EQ(c << 0, -42);
+        ASSERT_EQ(c >> 64, 0xFFFFFFFF);
     }
 }
