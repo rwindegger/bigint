@@ -911,6 +911,54 @@ namespace bigint {
             --*this;
             return result;
         }
+
+        [[nodiscard]] bigint operator&(bigint const &other) const {
+            bigint result(*this);
+            result &= other;
+            return result;
+        }
+
+        bigint &operator&=(bigint const &other) {
+            for (std::size_t i = 0; i < data_.size(); ++i) {
+                data_[i] &= other.data_[i];
+            }
+            return *this;
+        }
+
+        [[nodiscard]] bigint operator|(bigint const &other) const {
+            bigint result(*this);
+            result |= other;
+            return result;
+        }
+
+        bigint &operator|=(bigint const &other) {
+            for (std::size_t i = 0; i < data_.size(); ++i) {
+                data_[i] |= other.data_[i];
+            }
+            return *this;
+        }
+
+        [[nodiscard]] bigint operator^(bigint const &other) const {
+            bigint result(*this);
+            result ^= other;
+            return result;
+        }
+
+        bigint &operator^=(bigint const &other) {
+            for (std::size_t i = 0; i < data_.size(); ++i) {
+                data_[i] ^= other.data_[i];
+            }
+            return *this;
+        }
+
+        [[nodiscard]] bigint operator~() const {
+            bigint result(*this);
+            for (auto &byte: result.data_) {
+                byte = ~byte;
+            }
+            return result;
+        }
+
         template<std::size_t other_bits, bool other_is_signed>
         friend class bigint;
     };

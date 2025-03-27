@@ -8,6 +8,7 @@ add_executable(
         bigint_tests
         arithmetic_tests.cpp
         assign_and_equals_tests.cpp
+        binary_tests.cpp
         comparison_tests.cpp
         main.cpp
 )
