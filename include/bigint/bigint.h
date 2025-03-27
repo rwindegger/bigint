@@ -882,10 +882,7 @@ namespace bigint {
         }
 
         [[nodiscard]] bigint operator-() const {
-            bigint result(*this);
-            for (auto &byte: result.data_) {
-                byte = ~byte;
-            }
+            bigint result = ~*this;
             result += static_cast<int8_t>(1);
             return result;
         }
