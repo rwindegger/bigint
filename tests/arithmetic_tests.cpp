@@ -164,4 +164,20 @@ namespace {
         ASSERT_EQ(c << 0, -42);
         ASSERT_EQ(c >> 64, 0xFFFFFFFF);
     }
+
+    TEST(bigint, increment_test) {
+        using i32 = bigint::bigint<32, true>;
+        i32 a = 42;
+        ASSERT_EQ(++a, 43);
+        ASSERT_EQ(a++, 43);
+        ASSERT_EQ(a, 44);
+    }
+
+    TEST(bigint, decrement_test) {
+        using i32 = bigint::bigint<32, true>;
+        i32 a = 42;
+        ASSERT_EQ(--a, 41);
+        ASSERT_EQ(a--, 41);
+        ASSERT_EQ(a, 40);
+    }
 }

@@ -160,13 +160,13 @@ namespace bigint {
                 switch (data[1]) {
                     case 'x':
                         init_from_string_base(&data[2], N - 3, 16);
-                        break;
+                    break;
                     case 'b':
                         init_from_string_base(&data[2], N - 3, 2);
-                        break;
+                    break;
                     default:
                         init_from_string_base(&data[1], N - 2, 8);
-                        break;
+                    break;
                 }
             } else {
                 if (data[0] == '-') {
@@ -890,6 +890,27 @@ namespace bigint {
             return result;
         }
 
+        bigint &operator++() {
+            *this += 1;
+            return *this;
+        }
+
+        bigint operator++(int) {
+            bigint result(*this);
+            ++*this;
+            return result;
+        }
+
+        bigint &operator--() {
+            *this -= 1;
+            return *this;
+        }
+
+        bigint operator--(int) {
+            bigint result(*this);
+            --*this;
+            return result;
+        }
         template<std::size_t other_bits, bool other_is_signed>
         friend class bigint;
     };
