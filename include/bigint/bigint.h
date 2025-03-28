@@ -11,6 +11,9 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#ifndef BIGINT_DISABLE_IO
+#include <iostream>
+#endif
 #include <stdexcept>
 #include <string>
 
@@ -734,18 +737,18 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         bigint &operator/=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == bigint(0)) {
+            if (other == static_cast<int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(0);
-            bigint remainder(0);
+            bigint quotient(static_cast<int8_t>(0));
+            bigint remainder(static_cast<int8_t>(0));
             constexpr std::size_t total_bits = bits;
 
             for (std::size_t i = total_bits; i > 0; --i) {
-                remainder <<= 1;
+                remainder <<= static_cast<int8_t>(1);
                 if (this->get_bit(i - 1)) {
-                    remainder += 1;
+                    remainder += static_cast<int8_t>(1);
                 }
                 if (remainder >= other) {
                     remainder -= other;
@@ -780,18 +783,18 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         bigint &operator%=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == bigint(0)) {
+            if (other == static_cast<int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(0);
-            bigint remainder(0);
+            bigint quotient(static_cast<int8_t>(0));
+            bigint remainder(static_cast<int8_t>(0));
             constexpr std::size_t total_bits = bits; // total number of bits in *this
 
             for (std::size_t i = total_bits; i > 0; --i) {
-                remainder <<= 1;
+                remainder <<= static_cast<int8_t>(1);
                 if (this->get_bit(i - 1)) {
-                    remainder += 1;
+                    remainder += static_cast<int8_t>(1);
                 }
 
                 if (remainder >= other) {
@@ -994,5 +997,96 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         friend class bigint;
+
+#ifndef BIGINT_DISABLE_IO
+        template<std::size_t other_bits, bool other_is_signed>
+        friend std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
+#endif
     };
+#ifndef BIGINT_DISABLE_IO
+    template<std::size_t bits, bool is_signed>
+    std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
+        auto const flags = os.flags();
+        std::string result;
+
+        std::ios_base::fmtflags const base_flag = flags & std::ios_base::basefield;
+        bool const use_uppercase = (flags & std::ios_base::uppercase) != 0;
+
+        if (base_flag == std::ios_base::hex) {
+            if constexpr (std::endian::native == std::endian::little) {
+                for (std::size_t i = data.data_.size() - 1; i > 0; --i) {
+                    if (result.empty() && data.data_[i - 1] == 0 && i != 1) {
+                        continue;
+                    }
+                    std::array<char, 3> buffer{};
+                    std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i - 1]);
+                    result.append(buffer.data());
+                }
+            } else {
+                for (std::size_t i = 0; i < data.data_.size(); ++i) {
+                    if (result.empty() && data.data_[i] == 0 && i != 1) {
+                        continue;
+                    }
+                    std::array<char, 3> buffer{};
+                    std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i]);
+                    result.append(buffer.data());
+                }
+            }
+        } else if (base_flag == std::ios_base::oct) {
+            bigint<bits, is_signed> temp(data);
+            if (temp == static_cast<int8_t>(0)) {
+                result = "0";
+            } else {
+                while (temp != static_cast<int8_t>(0)) {
+                    bigint<bits, is_signed> r = temp % static_cast<int8_t>(8);
+                    int digit = 0;
+                    if constexpr (std::endian::native == std::endian::little) {
+                        digit = r.data_[0];
+                    } else {
+                        digit = r.data_[r.data_.size() - 1];
+                    }
+                    result.push_back('0' + digit);
+                    temp /= static_cast<int8_t>(8);
+                }
+                std::reverse(result.begin(), result.end());
+            }
+        } else if (base_flag == std::ios_base::dec) {
+            bigint<bits, is_signed> temp(data);
+            bool negative = false;
+            if constexpr (is_signed) {
+                if (temp < static_cast<int8_t>(0)) {
+                    negative = true;
+                    temp = -temp;
+                }
+            }
+            if (temp == static_cast<int8_t>(0)) {
+                result = "0";
+            } else {
+                while (temp != static_cast<int8_t>(0)) {
+                    bigint<bits, is_signed> r = temp % static_cast<int8_t>(10);
+                    int digit = 0;
+                    if constexpr (std::endian::native == std::endian::little) {
+                        digit = r.data_[0];
+                    } else {
+                        digit = r.data_[r.data_.size() - 1];
+                    }
+                    result.push_back('0' + digit);
+                    temp /= static_cast<int8_t>(10);
+                }
+                std::ranges::reverse(result);
+                if (negative) {
+                    result.insert(result.begin(), '-');
+                }
+            }
+        }
+        os << result;
+        return os;
+    }
+#endif
+
+    template<std::size_t bits, bool is_signed>
+    std::istream &operator>>(std::istream &is, bigint<bits, is_signed> &data) {
+        return is;
+    }
+#endif
 }
