@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 
 namespace bigint {
     template<std::size_t bits, bool is_signed>
@@ -160,13 +161,13 @@ namespace bigint {
                 switch (data[1]) {
                     case 'x':
                         init_from_string_base(&data[2], N - 3, 16);
-                    break;
+                        break;
                     case 'b':
                         init_from_string_base(&data[2], N - 3, 2);
-                    break;
+                        break;
                     default:
                         init_from_string_base(&data[1], N - 2, 8);
-                    break;
+                        break;
                 }
             } else {
                 if (data[0] == '-') {
@@ -177,6 +178,32 @@ namespace bigint {
                     *this = -*this;
                 } else {
                     init_from_string_base(data, N - 1, 10);
+                }
+            }
+        }
+
+        void init(std::string const &str) {
+            if (str.length() > 3 && str[0] == '0') {
+                switch (str[1]) {
+                    case 'x':
+                        init_from_string_base(&str[2], str.length() - 2, 16);
+                        break;
+                    case 'b':
+                        init_from_string_base(&str[2], str.length() - 2, 2);
+                        break;
+                    default:
+                        init_from_string_base(&str[1], str.length() - 1, 8);
+                        break;
+                }
+            } else {
+                if (str[0] == '-') {
+                    if constexpr (!is_signed) {
+                        throw std::runtime_error("Cannot initialize an unsigned bigint with a negative value.");
+                    }
+                    init_from_string_base(&str[1], str.length() - 1, 10);
+                    *this = -*this;
+                } else {
+                    init_from_string_base(str.data(), str.length(), 10);
                 }
             }
         }
@@ -200,6 +227,10 @@ namespace bigint {
             init(data);
         }
 
+        [[nodiscard]] bigint(std::string const &str) {
+            init(str);
+        }
+
         template<typename T>
             requires std::integral<T>
         bigint &operator=(T const &rhs) {
@@ -216,6 +247,11 @@ namespace bigint {
         template<std::size_t N>
         bigint &operator=(char const (&rhs)[N]) {
             init(rhs);
+            return *this;
+        }
+
+        bigint &operator=(std::string const &str) {
+            init(str);
             return *this;
         }
 

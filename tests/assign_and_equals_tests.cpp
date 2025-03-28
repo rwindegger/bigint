@@ -173,5 +173,21 @@ namespace {
         ASSERT_THROW(uint128_t const ab = "-42", std::runtime_error);
         ASSERT_THROW(uint128_t const ac = "0xG2", std::runtime_error);
         ASSERT_THROW(uint128_t const ad = "081", std::runtime_error);
+
+        int128_t const ae = std::string("-1234");
+        ASSERT_EQ(ae, -1234);
+        uint128_t const af = std::string("0x1234");
+        ASSERT_EQ(af, 0x1234);
+        uint128_t const ag = std::string("01234");
+        ASSERT_EQ(ag, 01234);
+        uint128_t const ah = std::string("0b10010101");
+        ASSERT_EQ(ah, 0b10010101);
+        uint128_t const ai = std::string("1234");
+        ASSERT_EQ(ai, 1234);
+        ASSERT_THROW(uint128_t const aj = std::string("-1234"), std::runtime_error);
+        uint128_t ak = std::string("0b10010101");
+        ASSERT_EQ(ak, 0b10010101);
+        ak = std::string("1234");
+        ASSERT_EQ(ak, 1234);
     }
 }
