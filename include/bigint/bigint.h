@@ -1001,6 +1001,9 @@ namespace bigint {
 #ifndef BIGINT_DISABLE_IO
         template<std::size_t other_bits, bool other_is_signed>
         friend std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
+
+        template<std::size_t other_bits, bool other_is_signed>
+        friend std::istream &operator>>(std::istream &, bigint<other_bits, other_is_signed> &);
 #endif
     };
 #ifndef BIGINT_DISABLE_IO
@@ -1082,10 +1085,35 @@ namespace bigint {
         os << result;
         return os;
     }
-#endif
 
     template<std::size_t bits, bool is_signed>
     std::istream &operator>>(std::istream &is, bigint<bits, is_signed> &data) {
+        std::string token;
+        if (!(is >> token)) {
+            return is;
+        }
+
+        auto const flags = is.flags();
+        auto const base_flag = flags & std::ios_base::basefield;
+        std::uint8_t base = 10;
+        if (base_flag == std::ios_base::hex) {
+            base = 16;
+        } else if (base_flag == std::ios_base::oct) {
+            base = 8;
+        }
+        try {
+            if (base != 10) {
+                if (!token.empty() && token[0] == '-') {
+                    throw std::runtime_error("Negative sign not allowed for non-decimal input");
+                }
+                data = bigint<bits, is_signed>();;
+                data.init_from_string_base(token.c_str(), token.size(), base);
+            } else {
+                data = token;
+            }
+        } catch (std::exception const &) {
+            is.setstate(std::ios::failbit);
+        }
         return is;
     }
 #endif
