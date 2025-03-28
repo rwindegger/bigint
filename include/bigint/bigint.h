@@ -1006,6 +1006,7 @@ namespace bigint {
         friend std::istream &operator>>(std::istream &, bigint<other_bits, other_is_signed> &);
 #endif
     };
+
 #ifndef BIGINT_DISABLE_IO
     template<std::size_t bits, bool is_signed>
     std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
@@ -1051,7 +1052,7 @@ namespace bigint {
                     result.push_back('0' + digit);
                     temp /= static_cast<int8_t>(8);
                 }
-                std::reverse(result.begin(), result.end());
+                std::ranges::reverse(result);
             }
         } else if (base_flag == std::ios_base::dec) {
             bigint<bits, is_signed> temp(data);
