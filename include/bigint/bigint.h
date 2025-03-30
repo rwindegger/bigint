@@ -77,13 +77,13 @@ namespace bigint {
         void add_value(std::uint8_t const value) {
             std::uint16_t carry = value;
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < data_.size() && carry; ++i) {
+                for (std::size_t i = 0; i < data_.size() and carry; ++i) {
                     std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + carry;
                     data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 }
             } else {
-                for (std::size_t i = data_.size(); i > 0 && carry; --i) {
+                for (std::size_t i = data_.size(); i > 0 and carry; --i) {
                     std::size_t const idx = i - 1;
                     std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + carry;
                     data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
@@ -99,14 +99,14 @@ namespace bigint {
             std::fill(data_.begin(), data_.end(), 0);
             for (std::size_t i = 0; i < length; ++i) {
                 char const c = str[i];
-                if (c == '\'' || c == ' ')
+                if (c == '\'' or c == ' ')
                     continue;
                 std::uint8_t digit = 0;
-                if (c >= '0' && c <= '9') {
+                if (c >= '0' and c <= '9') {
                     digit = c - '0';
-                } else if (c >= 'a' && c <= 'f') {
+                } else if (c >= 'a' and c <= 'f') {
                     digit = 10 + (c - 'a');
-                } else if (c >= 'A' && c <= 'F') {
+                } else if (c >= 'A' and c <= 'F') {
                     digit = 10 + (c - 'A');
                 } else {
                     throw std::runtime_error("Invalid digit in input string.");
@@ -142,7 +142,7 @@ namespace bigint {
         template<std::size_t other_bits, bool other_is_signed>
         void init(bigint<other_bits, other_is_signed> other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
-            if (other_is_signed && other < static_cast<std::int8_t>(0)) {
+            if (other_is_signed and other < static_cast<std::int8_t>(0)) {
                 std::fill_n(data_.data(), data_.size(), 0xFF);
             } else {
                 std::fill_n(data_.data(), data_.size(), 0);
@@ -160,7 +160,7 @@ namespace bigint {
 
         template<std::size_t N>
         void init(char const (&data)[N]) {
-            if (N > 3 && data[0] == '0') {
+            if (N > 3 and data[0] == '0') {
                 switch (data[1]) {
                     case 'x':
                         init_from_string_base(&data[2], N - 3, 16);
@@ -186,7 +186,7 @@ namespace bigint {
         }
 
         void init(std::string const &str) {
-            if (str.length() > 3 && str[0] == '0') {
+            if (str.length() > 3 and str[0] == '0') {
                 switch (str[1]) {
                     case 'x':
                         init_from_string_base(&str[2], str.length() - 2, 16);
@@ -320,12 +320,12 @@ namespace bigint {
         [[nodiscard]] bool operator==(T const &other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
-            if (std::is_signed_v<T> && !is_signed && other < 0) {
+            if (std::is_signed_v<T> and !is_signed and other < 0) {
                 return false;
             }
 
             std::array<std::uint8_t, bits / CHAR_BIT> extended{};
-            std::uint8_t fill = (std::is_signed_v<T> && other < 0) ? 0xFF : 0;
+            std::uint8_t fill = (std::is_signed_v<T> and other < 0) ? 0xFF : 0;
 
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
@@ -388,7 +388,7 @@ namespace bigint {
 
             if constexpr (std::endian::native == std::endian::little) {
                 for (std::size_t i = max_size; i > 0; --i) {
-                    if constexpr (!is_signed && !other_is_signed) {
+                    if constexpr (!is_signed and !other_is_signed) {
                         auto const a = lhs_extended[i - 1];
                         auto const b = rhs_extended[i - 1];
                         if (a < b) {
@@ -397,7 +397,7 @@ namespace bigint {
                         if (a > b) {
                             return std::strong_ordering::greater;
                         }
-                    } else if constexpr (!is_signed && other_is_signed) {
+                    } else if constexpr (!is_signed and other_is_signed) {
                         auto const a = lhs_extended[i - 1];
                         auto const b = static_cast<int8_t>(rhs_extended[i - 1]);
                         if (a < b) {
@@ -406,7 +406,7 @@ namespace bigint {
                         if (a > b) {
                             return std::strong_ordering::greater;
                         }
-                    } else if constexpr (is_signed && !other_is_signed) {
+                    } else if constexpr (is_signed and !other_is_signed) {
                         auto const a = static_cast<int8_t>(lhs_extended[i - 1]);
                         auto const b = rhs_extended[i - 1];
                         if (a < b) {
@@ -428,7 +428,7 @@ namespace bigint {
                 }
             } else {
                 for (std::size_t i = 0; i < max_size; ++i) {
-                    if constexpr (!is_signed && !other_is_signed) {
+                    if constexpr (!is_signed and !other_is_signed) {
                         auto const a = lhs_extended[i];
                         auto const b = rhs_extended[i];
                         if (a < b) {
@@ -437,7 +437,7 @@ namespace bigint {
                         if (a > b) {
                             return std::strong_ordering::greater;
                         }
-                    } else if constexpr (!is_signed && other_is_signed) {
+                    } else if constexpr (!is_signed and other_is_signed) {
                         auto const a = lhs_extended[i];
                         auto const b = static_cast<int8_t>(rhs_extended[i]);
                         if (a < b) {
@@ -446,7 +446,7 @@ namespace bigint {
                         if (a > b) {
                             return std::strong_ordering::greater;
                         }
-                    } else if constexpr (is_signed && !other_is_signed) {
+                    } else if constexpr (is_signed and !other_is_signed) {
                         auto const a = static_cast<int8_t>(lhs_extended[i]);
                         auto const b = rhs_extended[i];
                         if (a < b) {
@@ -477,11 +477,11 @@ namespace bigint {
                 return other == *this;
             } else {
                 static_assert(bits >= other_bits, "Can't compare values with a larger bit count than the target type.");
-                if (other_is_signed && !is_signed && other < static_cast<std::int8_t>(0)) {
+                if (other_is_signed and !is_signed and other < static_cast<std::int8_t>(0)) {
                     return false;
                 }
 
-                std::uint8_t fill = (other_is_signed && other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
+                std::uint8_t fill = (other_is_signed and other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
 
                 std::array<std::uint8_t, bits / CHAR_BIT> extended{};
                 if constexpr (std::endian::native == std::endian::little) {
@@ -671,7 +671,7 @@ namespace bigint {
             constexpr std::size_t other_size = other_bits / CHAR_BIT;
 
             std::uint8_t fill = 0;
-            if constexpr (other_is_signed && other_size <= this_size) {
+            if constexpr (other_is_signed and other_size <= this_size) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (other.data_[other_size - 1] & 0x80) {
                         fill = 0xFF;
@@ -899,9 +899,9 @@ namespace bigint {
             } else {
                 for (std::size_t i = 0; i < n; ++i) {
                     int src = static_cast<int>(i) - static_cast<int>(byte_shift);
-                    std::uint8_t const lower = (src >= 0 && static_cast<std::size_t>(src) < n) ? data_[src] : fill;
+                    std::uint8_t const lower = (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill;
                     int src2 = src - 1;
-                    std::uint8_t const higher = (src2 >= 0 && static_cast<std::size_t>(src2) < n) ? data_[src2] : fill;
+                    std::uint8_t const higher = (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill;
                     if (bit_shift == 0) {
                         result[i] = lower;
                     } else {
@@ -1019,7 +1019,7 @@ namespace bigint {
         if (base_flag == std::ios_base::hex) {
             if constexpr (std::endian::native == std::endian::little) {
                 for (std::size_t i = data.data_.size() - 1; i > 0; --i) {
-                    if (result.empty() && data.data_[i - 1] == 0 && i != 1) {
+                    if (result.empty() and data.data_[i - 1] == 0 and i != 1) {
                         continue;
                     }
                     std::array<char, 3> buffer{};
@@ -1028,7 +1028,7 @@ namespace bigint {
                 }
             } else {
                 for (std::size_t i = 0; i < data.data_.size(); ++i) {
-                    if (result.empty() && data.data_[i] == 0 && i != 1) {
+                    if (result.empty() and data.data_[i] == 0 and i != 1) {
                         continue;
                     }
                     std::array<char, 3> buffer{};
@@ -1104,7 +1104,7 @@ namespace bigint {
         }
         try {
             if (base != 10) {
-                if (!token.empty() && token[0] == '-') {
+                if (!token.empty() and token[0] == '-') {
                     throw std::runtime_error("Negative sign not allowed for non-decimal input");
                 }
                 data = bigint<bits, is_signed>();;
