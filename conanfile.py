@@ -1,13 +1,13 @@
 from conan import ConanFile
 from conan.tools.cmake import cmake_layout, CMakeToolchain, CMakeDeps, CMake
 
-class bigint(ConanFile):
-    name = "bigint"
+class bigint23(ConanFile):
+    name = "bigint23"
     version = "1.0"
 
     license = "MIT"
     author = "Rene Windegger <rene@windegger.wtf>"
-    url = "https://github.com/rwindegger/bigint"
+    url = "https://github.com/rwindegger/bigint23"
     description = "A modern, header-only C++ library for arbitrarily sized integers."
     topics = ("bigint", "math", "arithmetics")
 

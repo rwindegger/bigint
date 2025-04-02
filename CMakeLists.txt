@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(bigint LANGUAGES C CXX VERSION 2.0)
+project(bigint23 LANGUAGES C CXX VERSION 2.0)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,24 +10,24 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
 add_library(
-        bigint
+        bigint23
         INTERFACE
-        include/bigint/bigint.h
+        include/bigint23/bigint23.h
 )
-add_library(bigint::bigint ALIAS bigint)
+add_library(bigint23::bigint23 ALIAS bigint23)
 
-target_compile_features(bigint INTERFACE cxx_std_23)
+target_compile_features(bigint23 INTERFACE cxx_std_23)
 
 target_include_directories(
-        bigint
+        bigint23
         INTERFACE
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 install(
-        TARGETS bigint
-        EXPORT bigintTargets
+        TARGETS bigint23
+        EXPORT bigint23Targets
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
@@ -36,41 +36,41 @@ install(
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-set(bigint_CMAKE_CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/bigint")
+set(bigint23_CMAKE_CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/bigint23")
 
 install(
-        EXPORT bigintTargets
-        FILE bigintTargets.cmake
-        NAMESPACE bigint::
-        DESTINATION ${bigint_CMAKE_CONFIG_DESTINATION}
+        EXPORT bigint23Targets
+        FILE bigint23Targets.cmake
+        NAMESPACE bigint23::
+        DESTINATION ${bigint23_CMAKE_CONFIG_DESTINATION}
 )
 
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/bigintConfigVersion.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/bigint23ConfigVersion.cmake
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY AnyNewerVersion
 )
 configure_package_config_file(
-        ${CMAKE_CURRENT_LIST_DIR}/cmake/bigintConfig.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/bigintConfig.cmake
-        INSTALL_DESTINATION ${bigint_CMAKE_CONFIG_DESTINATION}
+        ${CMAKE_CURRENT_LIST_DIR}/cmake/bigint23Config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/bigint23Config.cmake
+        INSTALL_DESTINATION ${bigint23_CMAKE_CONFIG_DESTINATION}
 )
 
 install(
         FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/bigintConfigVersion.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/bigintConfig.cmake
-        DESTINATION ${bigint_CMAKE_CONFIG_DESTINATION}
+        ${CMAKE_CURRENT_BINARY_DIR}/bigint23ConfigVersion.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/bigint23Config.cmake
+        DESTINATION ${bigint23_CMAKE_CONFIG_DESTINATION}
 )
 
 export(
-        EXPORT bigintTargets
-        FILE ${CMAKE_CURRENT_BINARY_DIR}/bigintTargets.cmake
-        NAMESPACE bigint::
+        EXPORT bigint23Targets
+        FILE ${CMAKE_CURRENT_BINARY_DIR}/bigint23Targets.cmake
+        NAMESPACE bigint23::
 )
-export(PACKAGE bigint)
+export(PACKAGE bigint23)
 
 option(BUILD_TESTING "..." ON)
 if (BUILD_TESTING)

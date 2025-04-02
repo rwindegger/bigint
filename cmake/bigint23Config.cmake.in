@@ -1,0 +1,8 @@
+get_filename_component(bigint23_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+if(NOT TARGET bigint23)
+    include("${bigint23_CMAKE_DIR}/bigint23Targets.cmake")
+endif()
+
+set(bigint23_LIBRARIES bigint23)
