@@ -9,6 +9,7 @@ add_executable(
         arithmetic_tests.cpp
         assign_and_equals_tests.cpp
         binary_tests.cpp
+        byteswap.cpp
         comparison_tests.cpp
         io_tests.cpp
         main.cpp

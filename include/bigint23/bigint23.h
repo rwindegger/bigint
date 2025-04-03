@@ -1005,6 +1005,9 @@ namespace bigint23 {
         template<std::size_t other_bits, bool other_is_signed>
         friend std::istream &operator>>(std::istream &, bigint23<other_bits, other_is_signed> &);
 #endif
+
+        template<std::size_t other_bits, bool other_is_signed>
+        friend bigint23<other_bits, other_is_signed> byteswap(bigint23<other_bits, other_is_signed> const &);
     };
 
 #ifndef bigint23_DISABLE_IO
@@ -1118,4 +1121,11 @@ namespace bigint23 {
         return is;
     }
 #endif
+
+    template<std::size_t bits, bool is_signed>
+    bigint23<bits, is_signed> byteswap(bigint23<bits, is_signed> const &data) {
+        bigint23<bits, is_signed> result{data};
+        std::ranges::reverse(result.data_);
+        return result;
+    }
 }
