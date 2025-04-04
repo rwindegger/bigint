@@ -180,4 +180,14 @@ namespace {
         ASSERT_EQ(a--, 41);
         ASSERT_EQ(a, 40);
     }
+
+    TEST(bigint23, unary_minus_test) {
+        using i8 = bigint23::bigint23<8, true>;
+        i8 const a = static_cast<int8_t>(0x80);
+        ASSERT_THROW(auto test = -a, std::overflow_error);
+        i8 const b = static_cast<int8_t>(-15);
+        ASSERT_EQ(static_cast<int8_t>(15), -b);
+        i8 const c = static_cast<int8_t>(15);
+        ASSERT_EQ(static_cast<int8_t>(-15), -c);
+    }
 }

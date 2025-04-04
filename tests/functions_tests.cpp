@@ -24,6 +24,8 @@ TEST(bigint23, byteswap_test) {
 TEST(bigint23, abs_test) {
     bigint23::bigint23<128, false> const expected = 1234567890;
     bigint23::bigint23<128, true> const input = -1234567890;
-    auto actual = abs(input);
-    ASSERT_EQ(actual, expected);
+    auto actual1 = abs(input);
+    ASSERT_EQ(actual1, expected);
+    auto actual2 = abs(expected);
+    ASSERT_EQ(actual2, expected);
 }

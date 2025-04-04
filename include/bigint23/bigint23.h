@@ -176,9 +176,10 @@ namespace bigint23 {
                 if (data[0] == '-') {
                     if constexpr (!is_signed) {
                         throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
+                    } else {
+                        init_from_string_base(&data[1], N - 2, 10);
+                        *this = -*this;
                     }
-                    init_from_string_base(&data[1], N - 2, 10);
-                    *this = -*this;
                 } else {
                     init_from_string_base(data, N - 1, 10);
                 }
@@ -202,9 +203,10 @@ namespace bigint23 {
                 if (str[0] == '-') {
                     if constexpr (!is_signed) {
                         throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
+                    } else {
+                        init_from_string_base(&str[1], str.length() - 1, 10);
+                        *this = -*this;
                     }
-                    init_from_string_base(&str[1], str.length() - 1, 10);
-                    *this = -*this;
                 } else {
                     init_from_string_base(str.data(), str.length(), 10);
                 }
@@ -635,9 +637,10 @@ namespace bigint23 {
                     }
                 }
             }
-
-            if (negative_result) {
-                result = -result;
+            if constexpr (is_signed) {
+                if (negative_result) {
+                    result = -result;
+                }
             }
             *this = result;
             return *this;
@@ -920,7 +923,30 @@ namespace bigint23 {
             return result;
         }
 
+        template<bool B = is_signed>
+            requires B
         [[nodiscard]] bigint23 operator-() const {
+            if constexpr (not is_signed) {
+                throw std::invalid_argument("signed value expected");
+            }
+
+            // Construct the minimum representable value for this bigint.
+            bigint23 min_value;
+            min_value.data_.fill(0);
+            if constexpr (std::endian::native == std::endian::little) {
+                // For little-endian, the most significant byte is the last one.
+                min_value.data_.back() = 0x80;
+            } else {
+                // For big-endian, the most significant byte is the first one.
+                min_value.data_.front() = 0x80;
+            }
+
+            // If *this is the minimum value, negation would overflow.
+            if (*this == min_value) {
+                throw std::overflow_error("Negation overflow: minimum value cannot be negated");
+            }
+
+            // Otherwise, perform two's complement negation.
             bigint23 result = ~*this;
             result += static_cast<int8_t>(1);
             return result;
@@ -1131,10 +1157,14 @@ namespace bigint23 {
 
     template<std::size_t bits, bool is_signed>
     bigint23<bits, is_signed> abs(bigint23<bits, is_signed> const &data) {
-        bigint23<bits, is_signed> result{data};
-        if (result < static_cast<int8_t>(0)) {
-            result = -result;
+        if constexpr (not is_signed) {
+            return data;
+        } else {
+            bigint23<bits, is_signed> result{data};
+            if (result < static_cast<int8_t>(0)) {
+                result = -result;
+            }
+            return result;
         }
-        return result;
     }
 }
