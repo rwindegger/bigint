@@ -1128,4 +1128,13 @@ namespace bigint23 {
         std::ranges::reverse(result.data_);
         return result;
     }
+
+    template<std::size_t bits, bool is_signed>
+    bigint23<bits, is_signed> abs(bigint23<bits, is_signed> const &data) {
+        bigint23<bits, is_signed> result{data};
+        if (result < static_cast<int8_t>(0)) {
+            result = -result;
+        }
+        return result;
+    }
 }
