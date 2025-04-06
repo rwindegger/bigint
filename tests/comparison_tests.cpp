@@ -2,13 +2,13 @@
 // Created by Rene Windegger on 22/03/2025.
 //
 
-#include <bigint23/bigint23.h>
+#include <bigint23/bigint.h>
 #include <gtest/gtest.h>
 
 namespace {
     TEST(bigint23, compare_8bit_test) {
-        using uint128_t = bigint23::bigint23<128, false>;
-        using int128_t = bigint23::bigint23<128, true>;
+        using uint128_t = bigint::bigint<128, false>;
+        using int128_t = bigint::bigint<128, true>;
         uint128_t const a = static_cast<uint8_t>(0x42);
         ASSERT_GT(static_cast<uint8_t>(0x43), a);
         ASSERT_LT(static_cast<uint8_t>(0x41), a);
@@ -20,8 +20,8 @@ namespace {
     }
 
     TEST(bigint23, compare_16bit_test) {
-        using uint128_t = bigint23::bigint23<128, false>;
-        using int128_t = bigint23::bigint23<128, true>;
+        using uint128_t = bigint::bigint<128, false>;
+        using int128_t = bigint::bigint<128, true>;
         uint128_t const a = static_cast<uint16_t>(0x42);
         ASSERT_GT(static_cast<uint16_t>(0x43), a);
         ASSERT_LT(static_cast<uint16_t>(0x41), a);
@@ -33,8 +33,8 @@ namespace {
     }
 
     TEST(bigint23, compare_32bit_test) {
-        using uint128_t = bigint23::bigint23<128, false>;
-        using int128_t = bigint23::bigint23<128, true>;
+        using uint128_t = bigint::bigint<128, false>;
+        using int128_t = bigint::bigint<128, true>;
         uint128_t const a = static_cast<uint32_t>(0x42);
         ASSERT_GT(static_cast<uint32_t>(0x43), a);
         ASSERT_LT(static_cast<uint32_t>(0x41), a);
@@ -46,8 +46,8 @@ namespace {
     }
 
     TEST(bigint23, complare_large_test) {
-        using uint128_t = bigint23::bigint23<128, false>;
-        using int128_t = bigint23::bigint23<128, true>;
+        using uint128_t = bigint::bigint<128, false>;
+        using int128_t = bigint::bigint<128, true>;
         uint128_t const a = static_cast<uint64_t>(0x42);
         uint128_t const b = static_cast<uint64_t>(0x43);
         ASSERT_LT(a, b);

@@ -2,13 +2,13 @@
 // Created by Rene Windegger on 21/03/2025.
 //
 
-#include <bigint23/bigint23.h>
+#include <bigint23/bigint.h>
 #include <gtest/gtest.h>
 
 namespace {
     TEST(bigint23, addition_with_integral_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const c = "0xffffffff";
         ASSERT_EQ(c + 1, 0);
         ASSERT_EQ(c + 2, 1);
@@ -18,8 +18,8 @@ namespace {
     }
 
     TEST(bigint23, addition_with_bigint23_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const c = "0xffffffff";
         u32 const d = "0x1";
         ASSERT_EQ(c + d, 0);
@@ -32,8 +32,8 @@ namespace {
     }
 
     TEST(bigint23, multiplication_with_integral_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 42;
         ASSERT_EQ(a * 43, 1806);
         i32 const c = 2018238;
@@ -45,10 +45,10 @@ namespace {
     }
 
     TEST(bigint23, multiplication_with_bigint23_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
-        using i16 = bigint23::bigint23<16, true>;
-        using u16 = bigint23::bigint23<16, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
+        using i16 = bigint::bigint<16, true>;
+        using u16 = bigint::bigint<16, false>;
         u32 const a = 42;
         u32 const b = 43;
         ASSERT_EQ(a * b, 1806);
@@ -65,8 +65,8 @@ namespace {
     }
 
     TEST(bigint23, subtraction_with_integral_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 42;
         ASSERT_EQ(a - 1, 41);
         ASSERT_EQ(a - 2, 40);
@@ -78,8 +78,8 @@ namespace {
     }
 
     TEST(bigint23, subtraction_with_bigint23_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 42;
         u32 const b = 1;
         ASSERT_EQ(a - b, 41);
@@ -94,8 +94,8 @@ namespace {
     }
 
     TEST(bigint23, division_with_integral_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 15;
         ASSERT_EQ(a / 3, 5);
         ASSERT_EQ(a / 2, 7);
@@ -105,8 +105,8 @@ namespace {
     }
 
     TEST(bigint23, division_with_bigint23_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 15;
         u32 const b = 3;
         ASSERT_EQ(a / b, 5);
@@ -120,8 +120,8 @@ namespace {
     }
 
     TEST(bigint23, modulo_with_integral_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 15;
         ASSERT_EQ(a % 3, 0);
         ASSERT_EQ(a % 2, 1);
@@ -131,8 +131,8 @@ namespace {
     }
 
     TEST(bigint23, modulo_with_bigint23_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 15;
         u32 const b = 3;
         ASSERT_EQ(a % b, 0);
@@ -146,8 +146,8 @@ namespace {
     }
 
     TEST(bigint23, shift_test) {
-        using i32 = bigint23::bigint23<32, true>;
-        using u32 = bigint23::bigint23<32, false>;
+        using i32 = bigint::bigint<32, true>;
+        using u32 = bigint::bigint<32, false>;
         u32 const a = 42;
         ASSERT_EQ(a >> 2, 10);
         ASSERT_EQ(a << 2, 168);
@@ -166,7 +166,7 @@ namespace {
     }
 
     TEST(bigint23, increment_test) {
-        using i32 = bigint23::bigint23<32, true>;
+        using i32 = bigint::bigint<32, true>;
         i32 a = 42;
         ASSERT_EQ(++a, 43);
         ASSERT_EQ(a++, 43);
@@ -174,7 +174,7 @@ namespace {
     }
 
     TEST(bigint23, decrement_test) {
-        using i32 = bigint23::bigint23<32, true>;
+        using i32 = bigint::bigint<32, true>;
         i32 a = 42;
         ASSERT_EQ(--a, 41);
         ASSERT_EQ(a--, 41);
@@ -182,8 +182,8 @@ namespace {
     }
 
     TEST(bigint23, unary_minus_test) {
-        using i8 = bigint23::bigint23<8, true>;
-        using u8 = bigint23::bigint23<8, false>;
+        using i8 = bigint::bigint<8, true>;
+        using u8 = bigint::bigint<8, false>;
         i8 const a = static_cast<int8_t>(0x80);
         ASSERT_THROW(auto test = -a, std::overflow_error);
         i8 const b = static_cast<int8_t>(-15);
