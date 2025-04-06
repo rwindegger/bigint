@@ -813,26 +813,21 @@ namespace bigint23 {
                         result[i + byte_shift] = data_[i];
                     }
                 }
-
-                std::uint16_t carry = 0;
-                for (std::size_t i = 0; i < n; ++i) {
-                    std::uint16_t const temp = (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry;
-                    result[i] = static_cast<std::uint8_t>(temp & 0xFF);
-                    carry = temp >> 8;
-                }
             } else {
                 for (std::size_t i = 0; i < n; ++i) {
                     if (i >= byte_shift) {
                         result[i - byte_shift] = data_[i];
                     }
                 }
-                std::uint16_t carry = 0;
-                for (std::size_t i = 0; i < n; ++i) {
-                    std::uint16_t const temp = (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry;
-                    result[i] = static_cast<std::uint8_t>(temp & 0xFF);
-                    carry = temp >> 8;
-                }
             }
+
+            std::uint16_t carry = 0;
+            for (std::size_t i = 0; i < n; ++i) {
+                std::uint16_t const temp = (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry;
+                result[i] = static_cast<std::uint8_t>(temp & 0xFF);
+                carry = temp >> 8;
+            }
+
             data_ = result;
             return *this;
         }
@@ -906,23 +901,18 @@ namespace bigint23 {
         }
 
         [[nodiscard]] bigint23 operator-() const {
-            // Construct the minimum representable value for this bigint.
             bigint23 min_value;
             min_value.data_.fill(0);
             if constexpr (std::endian::native == std::endian::little) {
-                // For little-endian, the most significant byte is the last one.
                 min_value.data_.back() = 0x80;
             } else {
-                // For big-endian, the most significant byte is the first one.
                 min_value.data_.front() = 0x80;
             }
 
-            // If *this is the minimum value, negation would overflow.
             if (*this == min_value) {
                 throw std::overflow_error("Negation overflow: minimum value cannot be negated");
             }
 
-            // Otherwise, perform two's complement negation.
             bigint23 result = ~*this;
             result += static_cast<int8_t>(1);
             return result;
