@@ -16,6 +16,7 @@
 #endif
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace bigint23 {
     template<std::size_t bits, bool is_signed>
@@ -158,36 +159,8 @@ namespace bigint23 {
             }
         }
 
-        template<std::size_t N>
-        void init(char const (&data)[N]) {
-            if (N > 3 and data[0] == '0') {
-                switch (data[1]) {
-                    case 'x':
-                        init_from_string_base(&data[2], N - 3, 16);
-                        break;
-                    case 'b':
-                        init_from_string_base(&data[2], N - 3, 2);
-                        break;
-                    default:
-                        init_from_string_base(&data[1], N - 2, 8);
-                        break;
-                }
-            } else {
-                if (data[0] == '-') {
-                    if constexpr (!is_signed) {
-                        throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
-                    } else {
-                        init_from_string_base(&data[1], N - 2, 10);
-                        *this = -*this;
-                    }
-                } else {
-                    init_from_string_base(data, N - 1, 10);
-                }
-            }
-        }
-
-        void init(std::string const &str) {
-            if (str.length() > 3 and str[0] == '0') {
+        void init(std::string_view const str) {
+            if (str.length() > 2 and str[0] == '0') {
                 switch (str[1]) {
                     case 'x':
                         init_from_string_base(&str[2], str.length() - 2, 16);
@@ -208,7 +181,7 @@ namespace bigint23 {
                         *this = -*this;
                     }
                 } else {
-                    init_from_string_base(str.data(), str.length(), 10);
+                    init_from_string_base(&str[0], str.length(), 10);
                 }
             }
         }
@@ -225,6 +198,10 @@ namespace bigint23 {
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] bigint23(bigint23<other_bits, other_is_signed> other) {
             init(other);
+        }
+
+        [[nodiscard]] bigint23(std::string_view const str) {
+            init(str);
         }
 
         template<std::size_t N>
@@ -249,14 +226,19 @@ namespace bigint23 {
             return *this;
         }
 
+        bigint23 &operator=(std::string_view const str) {
+            init(str);
+            return *this;
+        }
+
         template<std::size_t N>
         bigint23 &operator=(char const (&rhs)[N]) {
             init(rhs);
             return *this;
         }
 
-        bigint23 &operator=(std::string const &str) {
-            init(str);
+        bigint23 &operator=(std::string const &rhs) {
+            init(rhs);
             return *this;
         }
 
