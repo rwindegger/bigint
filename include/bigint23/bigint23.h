@@ -905,13 +905,7 @@ namespace bigint23 {
             return result;
         }
 
-        template<bool B = is_signed>
-            requires B
         [[nodiscard]] bigint23 operator-() const {
-            if constexpr (not is_signed) {
-                throw std::invalid_argument("signed value expected");
-            }
-
             // Construct the minimum representable value for this bigint.
             bigint23 min_value;
             min_value.data_.fill(0);
