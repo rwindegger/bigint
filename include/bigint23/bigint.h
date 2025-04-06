@@ -11,7 +11,7 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
-#ifndef bigint23_DISABLE_IO
+#ifndef bigint_DISABLE_IO
 #include <iostream>
 #endif
 #include <stdexcept>
@@ -975,7 +975,7 @@ namespace bigint {
         template<std::size_t other_bits, bool other_is_signed>
         friend class bigint;
 
-#ifndef bigint23_DISABLE_IO
+#ifndef bigint_DISABLE_IO
         template<std::size_t other_bits, bool other_is_signed>
         friend std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
 
@@ -987,7 +987,7 @@ namespace bigint {
         friend bigint<other_bits, other_is_signed> byteswap(bigint<other_bits, other_is_signed> const &);
     };
 
-#ifndef bigint23_DISABLE_IO
+#ifndef bigint_DISABLE_IO
     template<std::size_t bits, bool is_signed>
     std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
         auto const flags = os.flags();
