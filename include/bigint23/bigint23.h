@@ -120,9 +120,8 @@ namespace bigint23 {
             }
         }
 
-        template<typename T>
-            requires std::integral<T>
-        void init(T const &data) {
+        template<std::integral T>
+        void init(T const data) {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't assign values with a larger bit count than the target type.");
             std::uint8_t fill = 0;
@@ -189,9 +188,8 @@ namespace bigint23 {
     public:
         [[nodiscard]] bigint23() = default;
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23(T const &data) {
+        template<std::integral T>
+        [[nodiscard]] bigint23(T const data) {
             init(data);
         }
 
@@ -213,9 +211,8 @@ namespace bigint23 {
             init(str);
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator=(T const &rhs) {
+        template<std::integral T>
+        bigint23 &operator=(T const rhs) {
             init(rhs);
             return *this;
         }
@@ -242,9 +239,8 @@ namespace bigint23 {
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] std::strong_ordering operator<=>(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] std::strong_ordering operator<=>(T const other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
 
@@ -299,9 +295,8 @@ namespace bigint23 {
             return std::strong_ordering::equal;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bool operator==(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bool operator==(T const other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
             if (std::is_signed_v<T> and !is_signed and other < 0) {
@@ -480,16 +475,14 @@ namespace bigint23 {
             }
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator+=(T const &other) {
+        template<std::integral T>
+        bigint23 &operator+=(T const other) {
             *this += bigint23(other);
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23 operator+(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bigint23 operator+(T const other) const {
             bigint23 result(*this);
             result += other;
             return result;
@@ -540,16 +533,14 @@ namespace bigint23 {
             return result;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator*=(T const &other) {
+        template<std::integral T>
+        bigint23 &operator*=(T const other) {
             *this *= bigint23(other);
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23 operator*(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bigint23 operator*(T const other) const {
             bigint23 result(*this);
             result *= other;
             return result;
@@ -635,16 +626,14 @@ namespace bigint23 {
             return result;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator-=(T const &other) {
+        template<std::integral T>
+        bigint23 &operator-=(T const other) {
             *this -= bigint23(other);
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23 operator-(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bigint23 operator-(T const other) const {
             bigint23 result(*this);
             result -= other;
             return result;
@@ -705,16 +694,14 @@ namespace bigint23 {
             return result;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator/=(T const &other) {
+        template<std::integral T>
+        bigint23 &operator/=(T const other) {
             *this /= bigint23(other);
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23 operator/(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bigint23 operator/(T const other) const {
             bigint23 result(*this);
             result /= other;
             return result;
@@ -751,16 +738,14 @@ namespace bigint23 {
             return result;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        bigint23 &operator%=(T const &other) {
+        template<std::integral T>
+        bigint23 &operator%=(T const other) {
             *this %= bigint23(other);
             return *this;
         }
 
-        template<typename T>
-            requires std::integral<T>
-        [[nodiscard]] bigint23 operator%(T const &other) const {
+        template<std::integral T>
+        [[nodiscard]] bigint23 operator%(T const other) const {
             bigint23 result(*this);
             result %= other;
             return result;
