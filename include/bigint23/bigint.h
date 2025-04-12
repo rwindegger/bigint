@@ -20,7 +20,7 @@
 
 namespace bigint {
     template<std::size_t bits, bool is_signed>
-    class bigint {
+    class bigint final {
     private:
         std::array<std::uint8_t, bits / CHAR_BIT> data_{};
 
