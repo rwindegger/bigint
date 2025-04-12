@@ -96,10 +96,10 @@ namespace bigint {
                 std::fill_n(extended.begin() + sizeof(T), extended.size() - sizeof(T), fill);
                 for (auto const i: std::views::reverse(std::views::iota(1uz, extended.size() + 1))) {
                     if constexpr (std::is_signed_v<T>) {
-                        if (static_cast<int8_t>(data_[i - 1]) < static_cast<int8_t>(extended[i - 1])) {
+                        if (static_cast<std::int8_t>(data_[i - 1]) < static_cast<std::int8_t>(extended[i - 1])) {
                             return std::strong_ordering::less;
                         }
-                        if (static_cast<int8_t>(data_[i - 1]) > static_cast<int8_t>(extended[i - 1])) {
+                        if (static_cast<std::int8_t>(data_[i - 1]) > static_cast<std::int8_t>(extended[i - 1])) {
                             return std::strong_ordering::greater;
                         }
                     } else {
@@ -116,10 +116,10 @@ namespace bigint {
                 std::fill_n(extended.begin(), extended.size() - sizeof(T), fill);
                 for (auto const i: std::views::iota(0uz, extended.size())) {
                     if constexpr (std::is_signed_v<T>) {
-                        if (static_cast<int8_t>(data_[i]) < static_cast<int8_t>(extended[i])) {
+                        if (static_cast<std::int8_t>(data_[i]) < static_cast<std::int8_t>(extended[i])) {
                             return std::strong_ordering::less;
                         }
-                        if (static_cast<int8_t>(data_[i]) > static_cast<int8_t>(extended[i])) {
+                        if (static_cast<std::int8_t>(data_[i]) > static_cast<std::int8_t>(extended[i])) {
                             return std::strong_ordering::greater;
                         }
                     } else {
@@ -222,7 +222,7 @@ namespace bigint {
                         }
                     } else if constexpr (!is_signed and other_is_signed) {
                         auto const a = lhs_extended[i - 1];
-                        auto const b = static_cast<int8_t>(rhs_extended[i - 1]);
+                        auto const b = static_cast<std::int8_t>(rhs_extended[i - 1]);
                         if (a < b) {
                             return std::strong_ordering::less;
                         }
@@ -230,7 +230,7 @@ namespace bigint {
                             return std::strong_ordering::greater;
                         }
                     } else if constexpr (is_signed and !other_is_signed) {
-                        auto const a = static_cast<int8_t>(lhs_extended[i - 1]);
+                         auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
                         auto const b = rhs_extended[i - 1];
                         if (a < b) {
                             return std::strong_ordering::less;
@@ -239,8 +239,8 @@ namespace bigint {
                             return std::strong_ordering::greater;
                         }
                     } else {
-                        auto const a = static_cast<int8_t>(lhs_extended[i - 1]);
-                        auto const b = static_cast<int8_t>(rhs_extended[i - 1]);
+                        auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
+                        auto const b = static_cast<std::int8_t>(rhs_extended[i - 1]);
                         if (a < b) {
                             return std::strong_ordering::less;
                         }
@@ -262,7 +262,7 @@ namespace bigint {
                         }
                     } else if constexpr (!is_signed and other_is_signed) {
                         auto const a = lhs_extended[i];
-                        auto const b = static_cast<int8_t>(rhs_extended[i]);
+                        auto const b = static_cast<std::int8_t>(rhs_extended[i]);
                         if (a < b) {
                             return std::strong_ordering::less;
                         }
@@ -270,7 +270,7 @@ namespace bigint {
                             return std::strong_ordering::greater;
                         }
                     } else if constexpr (is_signed and !other_is_signed) {
-                        auto const a = static_cast<int8_t>(lhs_extended[i]);
+                        auto const a = static_cast<std::int8_t>(lhs_extended[i]);
                         auto const b = rhs_extended[i];
                         if (a < b) {
                             return std::strong_ordering::less;
@@ -279,8 +279,8 @@ namespace bigint {
                             return std::strong_ordering::greater;
                         }
                     } else {
-                        auto const a = static_cast<int8_t>(lhs_extended[i]);
-                        auto const b = static_cast<int8_t>(rhs_extended[i]);
+                        auto const a = static_cast<std::int8_t>(lhs_extended[i]);
+                        auto const b = static_cast<std::int8_t>(rhs_extended[i]);
                         if (a < b) {
                             return std::strong_ordering::less;
                         }
@@ -397,13 +397,13 @@ namespace bigint {
             bigint abs_other(other);
 
             if constexpr (is_signed) {
-                if (*this < static_cast<int8_t>(0)) {
+                if (*this < static_cast<std::int8_t>(0)) {
                     negative_result = !negative_result;
                     abs_this = -abs_this;
                 }
             }
             if constexpr (other_is_signed) {
-                if (other < static_cast<int8_t>(0)) {
+                if (other < static_cast<std::int8_t>(0)) {
                     negative_result = !negative_result;
                     abs_other = -abs_other;
                 }
@@ -503,7 +503,7 @@ namespace bigint {
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
-                    int16_t diff = static_cast<int16_t>(data_[i]) - static_cast<int16_t>(other_byte) - borrow;
+                    std::int16_t diff = static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) - borrow;
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
@@ -514,7 +514,7 @@ namespace bigint {
                 } else {
                     std::size_t idx = this_size - 1 - i;
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
-                    int16_t diff = static_cast<int16_t>(data_[idx]) - static_cast<int16_t>(other_byte) - borrow;
+                    std::int16_t diff = static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) - borrow;
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
@@ -549,18 +549,18 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator/=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == static_cast<int8_t>(0)) {
+            if (other == static_cast<std::int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(static_cast<int8_t>(0));
-            bigint remainder(static_cast<int8_t>(0));
+            bigint quotient(static_cast<std::int8_t>(0));
+            bigint remainder(static_cast<std::int8_t>(0));
             static constexpr std::size_t total_bits = bits;
 
             for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
-                remainder <<= static_cast<int8_t>(1);
+                remainder <<= static_cast<std::int8_t>(1);
                 if (this->get_bit(i - 1)) {
-                    remainder += static_cast<int8_t>(1);
+                    remainder += static_cast<std::int8_t>(1);
                 }
                 if (remainder >= other) {
                     remainder -= other;
@@ -593,18 +593,18 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator%=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == static_cast<int8_t>(0)) {
+            if (other == static_cast<std::int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(static_cast<int8_t>(0));
-            bigint remainder(static_cast<int8_t>(0));
+            bigint quotient(static_cast<std::int8_t>(0));
+            bigint remainder(static_cast<std::int8_t>(0));
             static constexpr std::size_t total_bits = bits; // total number of bits in *this
 
             for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
-                remainder <<= static_cast<int8_t>(1);
+                remainder <<= static_cast<std::int8_t>(1);
                 if (this->get_bit(i - 1)) {
-                    remainder += static_cast<int8_t>(1);
+                    remainder += static_cast<std::int8_t>(1);
                 }
 
                 if (remainder >= other) {
@@ -739,7 +739,7 @@ namespace bigint {
             }
 
             bigint result = ~*this;
-            result += static_cast<int8_t>(1);
+            result += static_cast<std::int8_t>(1);
             return result;
         }
 
@@ -1024,11 +1024,11 @@ namespace bigint {
             }
         } else if (base_flag == std::ios_base::oct) {
             bigint<bits, is_signed> temp(data);
-            if (temp == static_cast<int8_t>(0)) {
+            if (temp == static_cast<std::int8_t>(0)) {
                 result = "0";
             } else {
-                while (temp != static_cast<int8_t>(0)) {
-                    bigint<bits, is_signed> r = temp % static_cast<int8_t>(8);
+                while (temp != static_cast<std::int8_t>(0)) {
+                    bigint<bits, is_signed> r = temp % static_cast<std::int8_t>(8);
                     int digit = 0;
                     if constexpr (std::endian::native == std::endian::little) {
                         digit = r.data_[0];
@@ -1036,7 +1036,7 @@ namespace bigint {
                         digit = r.data_[r.data_.size() - 1];
                     }
                     result.push_back('0' + digit);
-                    temp /= static_cast<int8_t>(8);
+                    temp /= static_cast<std::int8_t>(8);
                 }
                 std::ranges::reverse(result);
             }
@@ -1044,16 +1044,16 @@ namespace bigint {
             bigint<bits, is_signed> temp(data);
             bool negative = false;
             if constexpr (is_signed) {
-                if (temp < static_cast<int8_t>(0)) {
+                if (temp < static_cast<std::int8_t>(0)) {
                     negative = true;
                     temp = -temp;
                 }
             }
-            if (temp == static_cast<int8_t>(0)) {
+            if (temp == static_cast<std::int8_t>(0)) {
                 result = "0";
             } else {
-                while (temp != static_cast<int8_t>(0)) {
-                    bigint<bits, is_signed> r = temp % static_cast<int8_t>(10);
+                while (temp != static_cast<std::int8_t>(0)) {
+                    bigint<bits, is_signed> r = temp % static_cast<std::int8_t>(10);
                     int digit = 0;
                     if constexpr (std::endian::native == std::endian::little) {
                         digit = r.data_[0];
@@ -1061,7 +1061,7 @@ namespace bigint {
                         digit = r.data_[r.data_.size() - 1];
                     }
                     result.push_back('0' + digit);
-                    temp /= static_cast<int8_t>(10);
+                    temp /= static_cast<std::int8_t>(10);
                 }
                 std::ranges::reverse(result);
                 if (negative) {
@@ -1118,7 +1118,7 @@ namespace bigint {
             return data;
         } else {
             bigint<bits, is_signed> result{data};
-            if (result < static_cast<int8_t>(0)) {
+            if (result < static_cast<std::int8_t>(0)) {
                 result = -result;
             }
             return result;
