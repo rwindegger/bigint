@@ -142,7 +142,7 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        constexpr void init(bigint<other_bits, other_is_signed> other) {
+        constexpr void init(bigint<other_bits, other_is_signed> const &other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
             if (other_is_signed and other < static_cast<std::int8_t>(0)) {
                 std::fill_n(data_.data(), data_.size(), 0xFF);
@@ -196,7 +196,7 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] constexpr bigint(bigint<other_bits, other_is_signed> other) {
+        [[nodiscard]] constexpr bigint(bigint<other_bits, other_is_signed> const &other) {
             init(other);
         }
 
