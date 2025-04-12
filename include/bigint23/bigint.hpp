@@ -54,29 +54,36 @@ namespace bigint {
 
         template<std::integral T>
         bigint constexpr &operator=(T const rhs) {
-            init(rhs);
+            this->~bigint();
+            new(this) bigint(rhs);
             return *this;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint constexpr &operator=(bigint<other_bits, other_is_signed> rhs) {
-            init(rhs);
+        bigint constexpr &operator=(bigint<other_bits, other_is_signed> const &rhs) {
+            if (this != std::addressof(rhs)) {
+                this->~bigint();
+                new(this) bigint(rhs);
+            }
             return *this;
         }
 
         bigint constexpr &operator=(std::string_view const str) {
-            init(str);
+            this->~bigint();
+            new(this) bigint(str);
             return *this;
         }
 
         template<std::size_t N>
         bigint constexpr &operator=(char const (&rhs)[N]) {
-            init(rhs);
+            this->~bigint();
+            new(this) bigint(rhs);
             return *this;
         }
 
         bigint constexpr &operator=(std::string const &rhs) {
-            init(rhs);
+            this->~bigint();
+            new(this) bigint(rhs);
             return *this;
         }
 
@@ -230,7 +237,7 @@ namespace bigint {
                             return std::strong_ordering::greater;
                         }
                     } else if constexpr (is_signed and !other_is_signed) {
-                         auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
+                        auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
                         auto const b = rhs_extended[i - 1];
                         if (a < b) {
                             return std::strong_ordering::less;
@@ -503,7 +510,8 @@ namespace bigint {
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
-                    std::int16_t diff = static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) - borrow;
+                    std::int16_t diff = static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) -
+                                        borrow;
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
@@ -514,7 +522,8 @@ namespace bigint {
                 } else {
                     std::size_t idx = this_size - 1 - i;
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
-                    std::int16_t diff = static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) - borrow;
+                    std::int16_t diff = static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) -
+                                        borrow;
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
