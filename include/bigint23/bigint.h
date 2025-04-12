@@ -97,10 +97,9 @@ namespace bigint {
             }
         }
 
-        constexpr void init_from_string_base(char const *const str, std::size_t const length, std::uint32_t const base) {
+        constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
             std::fill(data_.begin(), data_.end(), 0);
-            for (std::size_t i = 0; i < length; ++i) {
-                char const c = str[i];
+            for (char const c : str) {
                 if (c == '\'' or c == ' ') {
                     continue;
                 }
@@ -164,13 +163,13 @@ namespace bigint {
             if (str.length() > 2 and str[0] == '0') {
                 switch (str[1]) {
                     case 'x':
-                        init_from_string_base(&str[2], str.length() - 2, 16);
+                        init_from_string_base(str.substr(2), 16);
                         break;
                     case 'b':
-                        init_from_string_base(&str[2], str.length() - 2, 2);
+                        init_from_string_base(str.substr(2), 2);
                         break;
                     default:
-                        init_from_string_base(&str[1], str.length() - 1, 8);
+                        init_from_string_base(str.substr(1), 8);
                         break;
                 }
             } else {
@@ -178,11 +177,11 @@ namespace bigint {
                     if constexpr (!is_signed) {
                         throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
                     } else {
-                        init_from_string_base(&str[1], str.length() - 1, 10);
+                        init_from_string_base(str.substr(1), 10);
                         *this = -*this;
                     }
                 } else {
-                    init_from_string_base(&str[0], str.length(), 10);
+                    init_from_string_base(str, 10);
                 }
             }
         }
@@ -1089,8 +1088,8 @@ namespace bigint {
                 if (!token.empty() and token[0] == '-') {
                     throw std::runtime_error("Negative sign not allowed for non-decimal input");
                 }
-                data = bigint<bits, is_signed>();;
-                data.init_from_string_base(token.c_str(), token.size(), base);
+                data = bigint<bits, is_signed>();
+                data.init_from_string_base(token, base);
             } else {
                 data = token;
             }
