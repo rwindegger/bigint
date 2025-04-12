@@ -25,8 +25,7 @@ namespace bigint {
         static_assert(bits % CHAR_BIT == 0, "bits must be a multiple of CHAR_BIT");
         std::array<std::uint8_t, bits / CHAR_BIT> data_{};
 
-        [[nodiscard]] bool get_bit(std::size_t const pos) const {
-            std::size_t byte_index = pos / 8;
+        [[nodiscard]] constexpr bool get_bit(std::size_t const pos) const {
             std::size_t const byte_index = pos / 8;
             std::size_t const bit_index = pos % 8;
             if constexpr (std::endian::native == std::endian::little) {
@@ -37,8 +36,7 @@ namespace bigint {
             }
         }
 
-        void set_bit(std::size_t const pos, bool const value) {
-            std::size_t byte_index = pos / 8;
+        constexpr void set_bit(std::size_t const pos, bool const value) {
             std::size_t const byte_index = pos / 8;
             std::size_t const bit_index = pos % 8;
             if constexpr (std::endian::native == std::endian::little) {
@@ -57,7 +55,7 @@ namespace bigint {
             }
         }
 
-        void multiply_by(std::uint32_t const multiplier) {
+        constexpr void multiply_by(std::uint32_t const multiplier) {
             std::uint32_t carry = 0;
             if constexpr (std::endian::native == std::endian::little) {
                 for (std::size_t i = 0; i < data_.size(); ++i) {
@@ -78,7 +76,7 @@ namespace bigint {
             }
         }
 
-        void add_value(std::uint8_t const value) {
+        constexpr void add_value(std::uint8_t const value) {
             std::uint16_t carry = value;
             if constexpr (std::endian::native == std::endian::little) {
                 for (std::size_t i = 0; i < data_.size() and carry; ++i) {
@@ -99,7 +97,7 @@ namespace bigint {
             }
         }
 
-        void init_from_string_base(char const *const str, std::size_t const length, std::uint32_t const base) {
+        constexpr void init_from_string_base(char const *const str, std::size_t const length, std::uint32_t const base) {
             std::fill(data_.begin(), data_.end(), 0);
             for (std::size_t i = 0; i < length; ++i) {
                 char const c = str[i];
@@ -125,7 +123,7 @@ namespace bigint {
         }
 
         template<std::integral T>
-        void init(T const data) {
+        constexpr void init(T const data) {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't assign values with a larger bit count than the target type.");
             std::uint8_t fill = 0;
@@ -144,7 +142,7 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        void init(bigint<other_bits, other_is_signed> other) {
+        constexpr void init(bigint<other_bits, other_is_signed> other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
             if (other_is_signed and other < static_cast<std::int8_t>(0)) {
                 std::fill_n(data_.data(), data_.size(), 0xFF);
@@ -162,7 +160,7 @@ namespace bigint {
             }
         }
 
-        void init(std::string_view const str) {
+        constexpr void init(std::string_view const str) {
             if (str.length() > 2 and str[0] == '0') {
                 switch (str[1]) {
                     case 'x':
@@ -190,61 +188,61 @@ namespace bigint {
         }
 
     public:
-        [[nodiscard]] bigint() = default;
+        [[nodiscard]] constexpr  bigint() = default;
 
         template<std::integral T>
-        [[nodiscard]] bigint(T const data) {
+        [[nodiscard]] constexpr bigint(T const data) {
             init(data);
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint(bigint<other_bits, other_is_signed> other) {
+        [[nodiscard]] constexpr bigint(bigint<other_bits, other_is_signed> other) {
             init(other);
         }
 
-        [[nodiscard]] bigint(std::string_view const str) {
+        [[nodiscard]] constexpr bigint(std::string_view const str) {
             init(str);
         }
 
         template<std::size_t N>
-        [[nodiscard]] bigint(char const (&data)[N]) {
+        [[nodiscard]] constexpr bigint(char const (&data)[N]) {
             init(data);
         }
 
-        [[nodiscard]] bigint(std::string const &str) {
+        [[nodiscard]] constexpr bigint(std::string const &str) {
             init(str);
         }
 
         template<std::integral T>
-        bigint &operator=(T const rhs) {
+        bigint constexpr &operator=(T const rhs) {
             init(rhs);
             return *this;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator=(bigint<other_bits, other_is_signed> rhs) {
+        bigint constexpr &operator=(bigint<other_bits, other_is_signed> rhs) {
             init(rhs);
             return *this;
         }
 
-        bigint &operator=(std::string_view const str) {
+        bigint constexpr &operator=(std::string_view const str) {
             init(str);
             return *this;
         }
 
         template<std::size_t N>
-        bigint &operator=(char const (&rhs)[N]) {
+        bigint constexpr &operator=(char const (&rhs)[N]) {
             init(rhs);
             return *this;
         }
 
-        bigint &operator=(std::string const &rhs) {
+        bigint constexpr &operator=(std::string const &rhs) {
             init(rhs);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] std::strong_ordering operator<=>(T const other) const {
+        [[nodiscard]] constexpr std::strong_ordering operator<=>(T const other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
 
@@ -300,7 +298,7 @@ namespace bigint {
         }
 
         template<std::integral T>
-        [[nodiscard]] bool operator==(T const other) const {
+        [[nodiscard]] constexpr bool operator==(T const other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
             if (std::is_signed_v<T> and !is_signed and other < 0) {
@@ -323,7 +321,7 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] std::strong_ordering operator<=>(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr std::strong_ordering operator<=>(bigint<other_bits, other_is_signed> const &other) const {
             constexpr std::size_t lhs_size = bits / CHAR_BIT;
             constexpr std::size_t rhs_size = other_bits / CHAR_BIT;
             constexpr std::size_t max_size = (lhs_size > rhs_size ? lhs_size : rhs_size);
@@ -455,7 +453,7 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bool operator==(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bool operator==(bigint<other_bits, other_is_signed> const &other) const {
             if constexpr (bits < other_bits) {
                 return other == *this;
             } else {
@@ -464,7 +462,7 @@ namespace bigint {
                     return false;
                 }
 
-                std::uint8_t fill = (other_is_signed and other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
+                std::uint8_t const fill = (other_is_signed and other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
 
                 std::array<std::uint8_t, bits / CHAR_BIT> extended{};
                 if constexpr (std::endian::native == std::endian::little) {
@@ -480,20 +478,20 @@ namespace bigint {
         }
 
         template<std::integral T>
-        bigint &operator+=(T const other) {
+        constexpr bigint &operator+=(T const other) {
             *this += bigint(other);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] bigint operator+(T const other) const {
+        [[nodiscard]] constexpr bigint operator+(T const other) const {
             bigint result(*this);
             result += other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator+=(bigint<other_bits, other_is_signed> const &other) {
+        constexpr bigint &operator+=(bigint<other_bits, other_is_signed> const &other) {
             constexpr std::size_t this_size = bits / CHAR_BIT;
             constexpr std::size_t other_size = other_bits / CHAR_BIT;
             std::uint16_t carry = 0;
@@ -531,27 +529,27 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint operator+(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bigint operator+(bigint<other_bits, other_is_signed> const &other) const {
             bigint result(*this);
             result += other;
             return result;
         }
 
         template<std::integral T>
-        bigint &operator*=(T const other) {
+        constexpr bigint &operator*=(T const other) {
             *this *= bigint(other);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] bigint operator*(T const other) const {
+        [[nodiscard]] constexpr bigint operator*(T const other) const {
             bigint result(*this);
             result *= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator*=(bigint<other_bits, other_is_signed> const &other) {
+        constexpr bigint &operator*=(bigint<other_bits, other_is_signed> const &other) {
             bool negative_result = false;
             bigint abs_this(*this);
             bigint abs_other(other);
@@ -624,27 +622,27 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint operator*(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bigint operator*(bigint<other_bits, other_is_signed> const &other) const {
             bigint result(*this);
             result *= other;
             return result;
         }
 
         template<std::integral T>
-        bigint &operator-=(T const other) {
+        constexpr bigint &operator-=(T const other) {
             *this -= bigint(other);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] bigint operator-(T const other) const {
+        [[nodiscard]] constexpr bigint operator-(T const other) const {
             bigint result(*this);
             result -= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator-=(bigint<other_bits, other_is_signed> const &other) {
+        constexpr bigint &operator-=(bigint<other_bits, other_is_signed> const &other) {
             constexpr std::size_t this_size = bits / CHAR_BIT;
             constexpr std::size_t other_size = other_bits / CHAR_BIT;
 
@@ -692,27 +690,27 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint operator-(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bigint operator-(bigint<other_bits, other_is_signed> const &other) const {
             bigint result(*this);
             result -= other;
             return result;
         }
 
         template<std::integral T>
-        bigint &operator/=(T const other) {
+        constexpr bigint &operator/=(T const other) {
             *this /= bigint(other);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] bigint operator/(T const other) const {
+        [[nodiscard]] constexpr bigint operator/(T const other) const {
             bigint result(*this);
             result /= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator/=(bigint<other_bits, other_is_signed> const &other) {
+        constexpr bigint &operator/=(bigint<other_bits, other_is_signed> const &other) {
             if (other == static_cast<int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
@@ -736,27 +734,27 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint operator/(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bigint operator/(bigint<other_bits, other_is_signed> const &other) const {
             bigint result(*this);
             result /= other;
             return result;
         }
 
         template<std::integral T>
-        bigint &operator%=(T const other) {
+        constexpr bigint &operator%=(T const other) {
             *this %= bigint(other);
             return *this;
         }
 
         template<std::integral T>
-        [[nodiscard]] bigint operator%(T const other) const {
+        [[nodiscard]] constexpr bigint operator%(T const other) const {
             bigint result(*this);
             result %= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        bigint &operator%=(bigint<other_bits, other_is_signed> const &other) {
+        constexpr bigint &operator%=(bigint<other_bits, other_is_signed> const &other) {
             if (other == static_cast<int8_t>(0)) {
                 throw std::overflow_error("Division by zero");
             }
@@ -780,13 +778,13 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] bigint operator%(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr bigint operator%(bigint<other_bits, other_is_signed> const &other) const {
             bigint result(*this);
             result %= other;
             return result;
         }
 
-        bigint &operator<<=(std::size_t const shift) {
+        constexpr bigint &operator<<=(std::size_t const shift) {
             constexpr std::size_t n = bits / CHAR_BIT;
             if (shift == 0) {
                 return *this;
@@ -821,13 +819,13 @@ namespace bigint {
             return *this;
         }
 
-        [[nodiscard]] bigint operator<<(std::size_t const shift) const {
+        [[nodiscard]] constexpr bigint operator<<(std::size_t const shift) const {
             bigint result(*this);
             result <<= shift;
             return result;
         }
 
-        bigint &operator>>=(std::size_t const shift) {
+        constexpr bigint &operator>>=(std::size_t const shift) {
             constexpr std::size_t n = bits / CHAR_BIT;
             if (shift == 0) {
                 return *this;
@@ -883,13 +881,13 @@ namespace bigint {
             return *this;
         }
 
-        [[nodiscard]] bigint operator>>(std::size_t const shift) const {
+        [[nodiscard]] constexpr bigint operator>>(std::size_t const shift) const {
             bigint result(*this);
             result >>= shift;
             return result;
         }
 
-        [[nodiscard]] bigint operator-() const {
+        [[nodiscard]] constexpr bigint operator-() const {
             bigint min_value;
             min_value.data_.fill(0);
             if constexpr (std::endian::native == std::endian::little) {
@@ -907,68 +905,68 @@ namespace bigint {
             return result;
         }
 
-        bigint &operator++() {
+        constexpr bigint &operator++() {
             *this += 1;
             return *this;
         }
 
-        bigint operator++(int) {
+        constexpr bigint operator++(int) {
             bigint result(*this);
             ++*this;
             return result;
         }
 
-        bigint &operator--() {
+        constexpr bigint &operator--() {
             *this -= 1;
             return *this;
         }
 
-        bigint operator--(int) {
+        constexpr bigint operator--(int) {
             bigint result(*this);
             --*this;
             return result;
         }
 
-        [[nodiscard]] bigint operator&(bigint const &other) const {
+        [[nodiscard]] constexpr bigint operator&(bigint const &other) const {
             bigint result(*this);
             result &= other;
             return result;
         }
 
-        bigint &operator&=(bigint const &other) {
+        constexpr bigint &operator&=(bigint const &other) {
             for (std::size_t i = 0; i < data_.size(); ++i) {
                 data_[i] &= other.data_[i];
             }
             return *this;
         }
 
-        [[nodiscard]] bigint operator|(bigint const &other) const {
+        [[nodiscard]] constexpr bigint operator|(bigint const &other) const {
             bigint result(*this);
             result |= other;
             return result;
         }
 
-        bigint &operator|=(bigint const &other) {
+        constexpr bigint &operator|=(bigint const &other) {
             for (std::size_t i = 0; i < data_.size(); ++i) {
                 data_[i] |= other.data_[i];
             }
             return *this;
         }
 
-        [[nodiscard]] bigint operator^(bigint const &other) const {
+        [[nodiscard]] constexpr bigint operator^(bigint const &other) const {
             bigint result(*this);
             result ^= other;
             return result;
         }
 
-        bigint &operator^=(bigint const &other) {
+        constexpr bigint &operator^=(bigint const &other) {
             for (std::size_t i = 0; i < data_.size(); ++i) {
                 data_[i] ^= other.data_[i];
             }
             return *this;
         }
 
-        [[nodiscard]] bigint operator~() const {
+        [[nodiscard]] constexpr bigint operator~() const {
             bigint result(*this);
             for (auto &byte: result.data_) {
                 byte = ~byte;
@@ -981,19 +979,19 @@ namespace bigint {
 
 #ifndef bigint_DISABLE_IO
         template<std::size_t other_bits, bool other_is_signed>
-        friend std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
+        friend constexpr std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
 
         template<std::size_t other_bits, bool other_is_signed>
-        friend std::istream &operator>>(std::istream &, bigint<other_bits, other_is_signed> &);
+        friend constexpr std::istream &operator>>(std::istream &, bigint<other_bits, other_is_signed> &);
 #endif
 
         template<std::size_t other_bits, bool other_is_signed>
-        friend bigint<other_bits, other_is_signed> byteswap(bigint<other_bits, other_is_signed> const &);
+        friend constexpr bigint<other_bits, other_is_signed> byteswap(bigint<other_bits, other_is_signed> const &);
     };
 
 #ifndef bigint_DISABLE_IO
     template<std::size_t bits, bool is_signed>
-    std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
+    constexpr std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
         auto const flags = os.flags();
         std::string result;
 
@@ -1072,7 +1070,7 @@ namespace bigint {
     }
 
     template<std::size_t bits, bool is_signed>
-    std::istream &operator>>(std::istream &is, bigint<bits, is_signed> &data) {
+    constexpr std::istream &operator>>(std::istream &is, bigint<bits, is_signed> &data) {
         std::string token;
         if (!(is >> token)) {
             return is;
@@ -1104,14 +1102,14 @@ namespace bigint {
 #endif
 
     template<std::size_t bits, bool is_signed>
-    bigint<bits, is_signed> byteswap(bigint<bits, is_signed> const &data) {
+    constexpr bigint<bits, is_signed> byteswap(bigint<bits, is_signed> const &data) {
         bigint<bits, is_signed> result{data};
         std::ranges::reverse(result.data_);
         return result;
     }
 
     template<std::size_t bits, bool is_signed>
-    bigint<bits, is_signed> abs(bigint<bits, is_signed> const &data) {
+    constexpr bigint<bits, is_signed> abs(bigint<bits, is_signed> const &data) {
         if constexpr (not is_signed) {
             return data;
         } else {
