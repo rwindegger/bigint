@@ -140,8 +140,10 @@ namespace bigint {
         [[nodiscard]] constexpr bool operator==(T const other) const {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
-            if (std::is_signed_v<T> and !is_signed and other < 0) {
-                return false;
+            if constexpr (std::is_signed_v<T> and !is_signed) {
+                if (other < 0) {
+                    return false;
+                }
             }
 
             std::array<std::uint8_t, bits / CHAR_BIT> extended{};
@@ -298,8 +300,10 @@ namespace bigint {
                 return other == *this;
             } else {
                 static_assert(bits >= other_bits, "Can't compare values with a larger bit count than the target type.");
-                if (other_is_signed and !is_signed and other < static_cast<std::int8_t>(0)) {
-                    return false;
+                if constexpr (other_is_signed and !is_signed) {
+                    if (other < static_cast<std::int8_t>(0)) {
+                        return false;
+                    }
                 }
 
                 std::uint8_t const fill = (other_is_signed and other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
@@ -937,17 +941,21 @@ namespace bigint {
         template<std::size_t other_bits, bool other_is_signed>
         constexpr void init(bigint<other_bits, other_is_signed> const &other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
-            if (other_is_signed and other < static_cast<std::int8_t>(0)) {
-                std::fill_n(data_.data(), data_.size(), 0xFF);
+            if constexpr (other_is_signed) {
+                if (other < static_cast<std::int8_t>(0)) {
+                    data_.fill(0xFF);
+                } else {
+                    data_.fill(0);
+                }
             } else {
-                std::fill_n(data_.data(), data_.size(), 0);
+                data_.fill(0);
             }
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < other.data_.size(); ++i) {
+                for (auto const i: std::views::iota(0uz, other.data_.size())) {
                     data_[i] = other.data_[i];
                 }
             } else {
-                for (std::size_t i = other.data_.size(); i > 0; --i) {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, other.data_.size() + 1))) {
                     data_[data_.size() - i - 1] = other.data_[other.data_.size() - i - 1];
                 }
             }
