@@ -22,6 +22,7 @@ namespace bigint {
     template<std::size_t bits, bool is_signed>
     class bigint final {
     private:
+        static_assert(bits % CHAR_BIT == 0, "bits must be a multiple of CHAR_BIT");
         std::array<std::uint8_t, bits / CHAR_BIT> data_{};
 
         [[nodiscard]] bool get_bit(std::size_t const pos) const {
