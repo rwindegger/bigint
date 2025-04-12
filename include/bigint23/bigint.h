@@ -26,167 +26,6 @@ namespace bigint {
         static_assert(bits % CHAR_BIT == 0, "bits must be a multiple of CHAR_BIT");
         std::array<std::uint8_t, bits / CHAR_BIT> data_{};
 
-        [[nodiscard]] constexpr bool get_bit(std::size_t const pos) const {
-            std::size_t const byte_index = pos / 8;
-            std::size_t const bit_index = pos % 8;
-            if constexpr (std::endian::native == std::endian::little) {
-                return (data_[byte_index] >> bit_index) & 1;
-            } else {
-                std::size_t const index = data_.size() - 1 - byte_index;
-                return (data_[index] >> bit_index) & 1;
-            }
-        }
-
-        constexpr void set_bit(std::size_t const pos, bool const value) {
-            std::size_t const byte_index = pos / 8;
-            std::size_t const bit_index = pos % 8;
-            if constexpr (std::endian::native == std::endian::little) {
-                if (value) {
-                    data_[byte_index] |= static_cast<std::uint8_t>(1U << bit_index);
-                } else {
-                    data_[byte_index] &= static_cast<std::uint8_t>(~(1U << bit_index));
-                }
-            } else {
-                std::size_t const index = data_.size() - 1 - byte_index;
-                if (value) {
-                    data_[index] |= static_cast<std::uint8_t>(1U << bit_index);
-                } else {
-                    data_[index] &= static_cast<std::uint8_t>(~(1U << bit_index));
-                }
-            }
-        }
-
-        constexpr void multiply_by(std::uint32_t const multiplier) {
-            std::uint32_t carry = 0;
-            if constexpr (std::endian::native == std::endian::little) {
-                for (auto const i: std::views::iota(0uz, data_.size())) {
-                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[i]) * multiplier + carry;
-                    data_[i] = static_cast<std::uint8_t>(prod & 0xFF);
-                    carry = prod >> 8;
-                }
-            } else {
-                for (auto const i: std::views::reverse(std::views::iota(1uz, data_.size() + 1))) {
-                    std::size_t const idx = i - 1;
-                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[idx]) * multiplier + carry;
-                    data_[idx] = static_cast<std::uint8_t>(prod & 0xFF);
-                    carry = prod >> 8;
-                }
-            }
-            if (carry != 0) {
-                throw std::overflow_error("Overflow during multiplication");
-            }
-        }
-
-        constexpr void add_value(std::uint8_t const value) {
-            std::uint16_t carry = value;
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < data_.size() and carry; ++i) {
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + carry;
-                    data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
-                    carry = sum >> 8;
-                }
-            } else {
-                for (std::size_t i = data_.size(); i > 0 and carry; --i) {
-                    std::size_t const idx = i - 1;
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + carry;
-                    data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
-                    carry = sum >> 8;
-                }
-            }
-            if (carry != 0) {
-                throw std::overflow_error("Overflow during addition");
-            }
-        }
-
-        constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
-            data_.fill(0);
-            for (char const c: str) {
-                if (c == '\'' or c == ' ') {
-                    continue;
-                }
-                std::uint8_t digit = 0;
-                if (c >= '0' and c <= '9') {
-                    digit = c - '0';
-                } else if (c >= 'a' and c <= 'f') {
-                    digit = 10 + (c - 'a');
-                } else if (c >= 'A' and c <= 'F') {
-                    digit = 10 + (c - 'A');
-                } else {
-                    throw std::runtime_error("Invalid digit in input string.");
-                }
-                if (digit >= base) {
-                    throw std::runtime_error("Digit out of range for base.");
-                }
-                multiply_by(base);
-                add_value(digit);
-            }
-        }
-
-        template<std::integral T>
-        constexpr void init(T const data) {
-            static_assert(bits / CHAR_BIT >= sizeof(T),
-                          "Can't assign values with a larger bit count than the target type.");
-            std::uint8_t fill = 0;
-            if constexpr (std::is_signed_v<T>) {
-                fill = (data < 0 ? 0xFF : 0);
-            }
-
-            if constexpr (std::endian::native == std::endian::little) {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
-                std::fill_n(data_.begin() + sizeof(T), data_.size() - sizeof(T), fill);
-            } else {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
-                            data_.end() - sizeof(T));
-                std::fill_n(data_.begin(), data_.size() - sizeof(T), fill);
-            }
-        }
-
-        template<std::size_t other_bits, bool other_is_signed>
-        constexpr void init(bigint<other_bits, other_is_signed> const &other) {
-            static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
-            if (other_is_signed and other < static_cast<std::int8_t>(0)) {
-                std::fill_n(data_.data(), data_.size(), 0xFF);
-            } else {
-                std::fill_n(data_.data(), data_.size(), 0);
-            }
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < other.data_.size(); ++i) {
-                    data_[i] = other.data_[i];
-                }
-            } else {
-                for (std::size_t i = other.data_.size(); i > 0; --i) {
-                    data_[data_.size() - i - 1] = other.data_[other.data_.size() - i - 1];
-                }
-            }
-        }
-
-        constexpr void init(std::string_view const str) {
-            if (str.length() > 2 and str[0] == '0') {
-                switch (str[1]) {
-                    case 'x':
-                        init_from_string_base(str.substr(2), 16);
-                        break;
-                    case 'b':
-                        init_from_string_base(str.substr(2), 2);
-                        break;
-                    default:
-                        init_from_string_base(str.substr(1), 8);
-                        break;
-                }
-            } else {
-                if (str[0] == '-') {
-                    if constexpr (!is_signed) {
-                        throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
-                    } else {
-                        init_from_string_base(str.substr(1), 10);
-                        *this = -*this;
-                    }
-                } else {
-                    init_from_string_base(str, 10);
-                }
-            }
-        }
-
     public:
         [[nodiscard]] constexpr bigint() = default;
 
@@ -978,6 +817,168 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         friend constexpr bigint<other_bits, other_is_signed> byteswap(bigint<other_bits, other_is_signed> const &);
+
+    private:
+        [[nodiscard]] constexpr bool get_bit(std::size_t const pos) const {
+            std::size_t const byte_index = pos / 8;
+            std::size_t const bit_index = pos % 8;
+            if constexpr (std::endian::native == std::endian::little) {
+                return (data_[byte_index] >> bit_index) & 1;
+            } else {
+                std::size_t const index = data_.size() - 1 - byte_index;
+                return (data_[index] >> bit_index) & 1;
+            }
+        }
+
+        constexpr void set_bit(std::size_t const pos, bool const value) {
+            std::size_t const byte_index = pos / 8;
+            std::size_t const bit_index = pos % 8;
+            if constexpr (std::endian::native == std::endian::little) {
+                if (value) {
+                    data_[byte_index] |= static_cast<std::uint8_t>(1U << bit_index);
+                } else {
+                    data_[byte_index] &= static_cast<std::uint8_t>(~(1U << bit_index));
+                }
+            } else {
+                std::size_t const index = data_.size() - 1 - byte_index;
+                if (value) {
+                    data_[index] |= static_cast<std::uint8_t>(1U << bit_index);
+                } else {
+                    data_[index] &= static_cast<std::uint8_t>(~(1U << bit_index));
+                }
+            }
+        }
+
+        constexpr void multiply_by(std::uint32_t const multiplier) {
+            std::uint32_t carry = 0;
+            if constexpr (std::endian::native == std::endian::little) {
+                for (auto const i: std::views::iota(0uz, data_.size())) {
+                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[i]) * multiplier + carry;
+                    data_[i] = static_cast<std::uint8_t>(prod & 0xFF);
+                    carry = prod >> 8;
+                }
+            } else {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, data_.size() + 1))) {
+                    std::size_t const idx = i - 1;
+                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[idx]) * multiplier + carry;
+                    data_[idx] = static_cast<std::uint8_t>(prod & 0xFF);
+                    carry = prod >> 8;
+                }
+            }
+            if (carry != 0) {
+                throw std::overflow_error("Overflow during multiplication");
+            }
+        }
+
+        constexpr void add_value(std::uint8_t const value) {
+            std::uint16_t carry = value;
+            if constexpr (std::endian::native == std::endian::little) {
+                for (std::size_t i = 0; i < data_.size() and carry; ++i) {
+                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + carry;
+                    data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
+                    carry = sum >> 8;
+                }
+            } else {
+                for (std::size_t i = data_.size(); i > 0 and carry; --i) {
+                    std::size_t const idx = i - 1;
+                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + carry;
+                    data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
+                    carry = sum >> 8;
+                }
+            }
+            if (carry != 0) {
+                throw std::overflow_error("Overflow during addition");
+            }
+        }
+
+        constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
+            data_.fill(0);
+            for (char const c: str) {
+                if (c == '\'' or c == ' ') {
+                    continue;
+                }
+                std::uint8_t digit = 0;
+                if (c >= '0' and c <= '9') {
+                    digit = c - '0';
+                } else if (c >= 'a' and c <= 'f') {
+                    digit = 10 + (c - 'a');
+                } else if (c >= 'A' and c <= 'F') {
+                    digit = 10 + (c - 'A');
+                } else {
+                    throw std::runtime_error("Invalid digit in input string.");
+                }
+                if (digit >= base) {
+                    throw std::runtime_error("Digit out of range for base.");
+                }
+                multiply_by(base);
+                add_value(digit);
+            }
+        }
+
+        template<std::integral T>
+        constexpr void init(T const data) {
+            static_assert(bits / CHAR_BIT >= sizeof(T),
+                          "Can't assign values with a larger bit count than the target type.");
+            std::uint8_t fill = 0;
+            if constexpr (std::is_signed_v<T>) {
+                fill = (data < 0 ? 0xFF : 0);
+            }
+
+            if constexpr (std::endian::native == std::endian::little) {
+                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
+                std::fill_n(data_.begin() + sizeof(T), data_.size() - sizeof(T), fill);
+            } else {
+                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
+                            data_.end() - sizeof(T));
+                std::fill_n(data_.begin(), data_.size() - sizeof(T), fill);
+            }
+        }
+
+        template<std::size_t other_bits, bool other_is_signed>
+        constexpr void init(bigint<other_bits, other_is_signed> const &other) {
+            static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
+            if (other_is_signed and other < static_cast<std::int8_t>(0)) {
+                std::fill_n(data_.data(), data_.size(), 0xFF);
+            } else {
+                std::fill_n(data_.data(), data_.size(), 0);
+            }
+            if constexpr (std::endian::native == std::endian::little) {
+                for (std::size_t i = 0; i < other.data_.size(); ++i) {
+                    data_[i] = other.data_[i];
+                }
+            } else {
+                for (std::size_t i = other.data_.size(); i > 0; --i) {
+                    data_[data_.size() - i - 1] = other.data_[other.data_.size() - i - 1];
+                }
+            }
+        }
+
+        constexpr void init(std::string_view const str) {
+            if (str.length() > 2 and str[0] == '0') {
+                switch (str[1]) {
+                    case 'x':
+                        init_from_string_base(str.substr(2), 16);
+                        break;
+                    case 'b':
+                        init_from_string_base(str.substr(2), 2);
+                        break;
+                    default:
+                        init_from_string_base(str.substr(1), 8);
+                        break;
+                }
+            } else {
+                if (str[0] == '-') {
+                    if constexpr (!is_signed) {
+                        throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
+                    } else {
+                        init_from_string_base(str.substr(1), 10);
+                        *this = -*this;
+                    }
+                } else {
+                    init_from_string_base(str, 10);
+                }
+            }
+        }
     };
 
 #ifndef bigint_DISABLE_IO
