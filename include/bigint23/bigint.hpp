@@ -31,25 +31,78 @@ namespace bigint {
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint(T const data) {
-            init(data);
+            static_assert(bits / CHAR_BIT >= sizeof(T),
+                          "Can't assign values with a larger bit count than the target type.");
+            std::uint8_t fill = 0;
+            if constexpr (std::is_signed_v<T>) {
+                fill = (data < 0 ? 0xFF : 0);
+            }
+
+            if constexpr (std::endian::native == std::endian::little) {
+                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
+                std::fill_n(data_.begin() + sizeof(T), data_.size() - sizeof(T), fill);
+            } else {
+                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
+                            data_.end() - sizeof(T));
+                std::fill_n(data_.begin(), data_.size() - sizeof(T), fill);
+            }
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint(bigint<other_bits, other_is_signed> const &other) {
-            init(other);
+            static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
+            if constexpr (other_is_signed) {
+                if (other < static_cast<std::int8_t>(0)) {
+                    data_.fill(0xFF);
+                } else {
+                    data_.fill(0);
+                }
+            } else {
+                data_.fill(0);
+            }
+            if constexpr (std::endian::native == std::endian::little) {
+                for (auto const i: std::views::iota(0uz, other.data_.size())) {
+                    data_[i] = other.data_[i];
+                }
+            } else {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, other.data_.size() + 1))) {
+                    data_[data_.size() - i - 1] = other.data_[other.data_.size() - i - 1];
+                }
+            }
         }
 
         [[nodiscard]] constexpr bigint(std::string_view const str) {
-            init(str);
+            if (str.length() > 2 and str[0] == '0') {
+                switch (str[1]) {
+                    case 'x':
+                        init_from_string_base(str.substr(2), 16);
+                        break;
+                    case 'b':
+                        init_from_string_base(str.substr(2), 2);
+                        break;
+                    default:
+                        init_from_string_base(str.substr(1), 8);
+                        break;
+                }
+            } else {
+                if (str[0] == '-') {
+                    if constexpr (!is_signed) {
+                        throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
+                    } else {
+                        init_from_string_base(str.substr(1), 10);
+                        *this = -*this;
+                    }
+                } else {
+                    init_from_string_base(str, 10);
+                }
+            }
         }
 
         template<std::size_t N>
-        [[nodiscard]] constexpr bigint(char const (&data)[N]) {
-            init(data);
+        [[nodiscard]] constexpr bigint(char const (&data)[N]) : bigint{std::string_view{data, N - 1}} {
         }
 
-        [[nodiscard]] constexpr bigint(std::string const &str) {
-            init(str);
+        [[nodiscard]] constexpr bigint(std::string const &str) : bigint{std::string_view{str}} {
         }
 
         template<std::integral T>
@@ -929,75 +982,6 @@ namespace bigint {
                 }
                 multiply_by(base);
                 add_value(digit);
-            }
-        }
-
-        template<std::integral T>
-        constexpr void init(T const data) {
-            static_assert(bits / CHAR_BIT >= sizeof(T),
-                          "Can't assign values with a larger bit count than the target type.");
-            std::uint8_t fill = 0;
-            if constexpr (std::is_signed_v<T>) {
-                fill = (data < 0 ? 0xFF : 0);
-            }
-
-            if constexpr (std::endian::native == std::endian::little) {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
-                std::fill_n(data_.begin() + sizeof(T), data_.size() - sizeof(T), fill);
-            } else {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
-                            data_.end() - sizeof(T));
-                std::fill_n(data_.begin(), data_.size() - sizeof(T), fill);
-            }
-        }
-
-        template<std::size_t other_bits, bool other_is_signed>
-        constexpr void init(bigint<other_bits, other_is_signed> const &other) {
-            static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
-            if constexpr (other_is_signed) {
-                if (other < static_cast<std::int8_t>(0)) {
-                    data_.fill(0xFF);
-                } else {
-                    data_.fill(0);
-                }
-            } else {
-                data_.fill(0);
-            }
-            if constexpr (std::endian::native == std::endian::little) {
-                for (auto const i: std::views::iota(0uz, other.data_.size())) {
-                    data_[i] = other.data_[i];
-                }
-            } else {
-                for (auto const i: std::views::reverse(std::views::iota(1uz, other.data_.size() + 1))) {
-                    data_[data_.size() - i - 1] = other.data_[other.data_.size() - i - 1];
-                }
-            }
-        }
-
-        constexpr void init(std::string_view const str) {
-            if (str.length() > 2 and str[0] == '0') {
-                switch (str[1]) {
-                    case 'x':
-                        init_from_string_base(str.substr(2), 16);
-                        break;
-                    case 'b':
-                        init_from_string_base(str.substr(2), 2);
-                        break;
-                    default:
-                        init_from_string_base(str.substr(1), 8);
-                        break;
-                }
-            } else {
-                if (str[0] == '-') {
-                    if constexpr (!is_signed) {
-                        throw std::runtime_error("Cannot initialize an unsigned bigint23 with a negative value.");
-                    } else {
-                        init_from_string_base(str.substr(1), 10);
-                        *this = -*this;
-                    }
-                } else {
-                    init_from_string_base(str, 10);
-                }
             }
         }
     };
