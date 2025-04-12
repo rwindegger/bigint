@@ -721,6 +721,10 @@ namespace bigint {
             return result;
         }
 
+        [[nodiscard]] constexpr bigint operator+() const {
+            return *this;
+        }
+
         [[nodiscard]] constexpr bigint operator-() const {
             bigint min_value;
             min_value.data_.fill(0);

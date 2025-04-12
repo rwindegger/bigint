@@ -194,4 +194,10 @@ namespace {
         u8 const actual = expected;
         ASSERT_EQ(-actual, static_cast<uint8_t>(-expected));
     }
+
+    TEST(bigint23, unary_plus_test) {
+        using i8 = bigint::bigint<8, true>;
+        constexpr i8 a = "42";
+        ASSERT_EQ(+a, static_cast<int8_t>(42));
+    }
 }
