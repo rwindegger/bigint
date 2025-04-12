@@ -27,17 +27,19 @@ namespace bigint {
 
         [[nodiscard]] bool get_bit(std::size_t const pos) const {
             std::size_t byte_index = pos / 8;
+            std::size_t const byte_index = pos / 8;
             std::size_t const bit_index = pos % 8;
             if constexpr (std::endian::native == std::endian::little) {
                 return (data_[byte_index] >> bit_index) & 1;
             } else {
-                std::size_t index = data_.size() - 1 - byte_index;
+                std::size_t const index = data_.size() - 1 - byte_index;
                 return (data_[index] >> bit_index) & 1;
             }
         }
 
         void set_bit(std::size_t const pos, bool const value) {
             std::size_t byte_index = pos / 8;
+            std::size_t const byte_index = pos / 8;
             std::size_t const bit_index = pos % 8;
             if constexpr (std::endian::native == std::endian::little) {
                 if (value) {
@@ -46,7 +48,7 @@ namespace bigint {
                     data_[byte_index] &= static_cast<std::uint8_t>(~(1U << bit_index));
                 }
             } else {
-                std::size_t index = data_.size() - 1 - byte_index;
+                std::size_t const index = data_.size() - 1 - byte_index;
                 if (value) {
                     data_[index] |= static_cast<std::uint8_t>(1U << bit_index);
                 } else {
@@ -101,8 +103,9 @@ namespace bigint {
             std::fill(data_.begin(), data_.end(), 0);
             for (std::size_t i = 0; i < length; ++i) {
                 char const c = str[i];
-                if (c == '\'' or c == ' ')
+                if (c == '\'' or c == ' ') {
                     continue;
+                }
                 std::uint8_t digit = 0;
                 if (c >= '0' and c <= '9') {
                     digit = c - '0';
@@ -864,9 +867,9 @@ namespace bigint {
                 }
             } else {
                 for (std::size_t i = 0; i < n; ++i) {
-                    int src = static_cast<int>(i) - static_cast<int>(byte_shift);
+                    int const src = static_cast<int>(i) - static_cast<int>(byte_shift);
                     std::uint8_t const lower = (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill;
-                    int src2 = src - 1;
+                    int const src2 = src - 1;
                     std::uint8_t const higher = (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill;
                     if (bit_shift == 0) {
                         result[i] = lower;
