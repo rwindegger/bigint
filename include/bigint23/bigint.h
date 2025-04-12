@@ -14,6 +14,7 @@
 #ifndef bigint_DISABLE_IO
 #include <iostream>
 #endif
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -58,13 +59,13 @@ namespace bigint {
         constexpr void multiply_by(std::uint32_t const multiplier) {
             std::uint32_t carry = 0;
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < data_.size(); ++i) {
+                for (auto const i: std::views::iota(0uz, data_.size())) {
                     std::uint32_t const prod = static_cast<std::uint32_t>(data_[i]) * multiplier + carry;
                     data_[i] = static_cast<std::uint8_t>(prod & 0xFF);
                     carry = prod >> 8;
                 }
             } else {
-                for (std::size_t i = data_.size(); i > 0; --i) {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, data_.size() + 1))) {
                     std::size_t const idx = i - 1;
                     std::uint32_t const prod = static_cast<std::uint32_t>(data_[idx]) * multiplier + carry;
                     data_[idx] = static_cast<std::uint8_t>(prod & 0xFF);
@@ -99,7 +100,7 @@ namespace bigint {
 
         constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
             std::fill(data_.begin(), data_.end(), 0);
-            for (char const c : str) {
+            for (char const c: str) {
                 if (c == '\'' or c == ' ') {
                     continue;
                 }
@@ -187,7 +188,7 @@ namespace bigint {
         }
 
     public:
-        [[nodiscard]] constexpr  bigint() = default;
+        [[nodiscard]] constexpr bigint() = default;
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint(T const data) {
@@ -254,7 +255,7 @@ namespace bigint {
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
                 std::fill_n(extended.begin() + sizeof(T), extended.size() - sizeof(T), fill);
-                for (std::size_t i = extended.size(); i > 0; --i) {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, extended.size() + 1))) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<int8_t>(data_[i - 1]) < static_cast<int8_t>(extended[i - 1])) {
                             return std::strong_ordering::less;
@@ -274,7 +275,7 @@ namespace bigint {
             } else {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.end() - sizeof(T));
                 std::fill_n(extended.begin(), extended.size() - sizeof(T), fill);
-                for (std::size_t i = 0; i < extended.size(); ++i) {
+                for (auto const i: std::views::iota(0uz, extended.size())) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<int8_t>(data_[i]) < static_cast<int8_t>(extended[i])) {
                             return std::strong_ordering::less;
@@ -320,7 +321,8 @@ namespace bigint {
         }
 
         template<std::size_t other_bits, bool other_is_signed>
-        [[nodiscard]] constexpr std::strong_ordering operator<=>(bigint<other_bits, other_is_signed> const &other) const {
+        [[nodiscard]] constexpr std::strong_ordering operator
+        <=>(bigint<other_bits, other_is_signed> const &other) const {
             constexpr std::size_t lhs_size = bits / CHAR_BIT;
             constexpr std::size_t rhs_size = other_bits / CHAR_BIT;
             constexpr std::size_t max_size = (lhs_size > rhs_size ? lhs_size : rhs_size);
@@ -367,7 +369,7 @@ namespace bigint {
             }
 
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = max_size; i > 0; --i) {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, max_size + 1))) {
                     if constexpr (!is_signed and !other_is_signed) {
                         auto const a = lhs_extended[i - 1];
                         auto const b = rhs_extended[i - 1];
@@ -407,7 +409,7 @@ namespace bigint {
                     }
                 }
             } else {
-                for (std::size_t i = 0; i < max_size; ++i) {
+                for (auto const i: std::views::iota(1u, max_size)) {
                     if constexpr (!is_signed and !other_is_signed) {
                         auto const a = lhs_extended[i];
                         auto const b = rhs_extended[i];
@@ -508,16 +510,14 @@ namespace bigint {
                 }
             }
 
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < this_size; ++i) {
+            for (auto const i: std::views::iota(0uz, this_size)) {
+                if constexpr (std::endian::native == std::endian::little) {
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
                     std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + other_byte + carry;
                     data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
-                }
-            } else {
-                for (std::size_t i = 0; i < this_size; ++i) {
-                    std::size_t idx = this_size - 1 - i;
+                } else {
+                    std::size_t const idx = this_size - 1 - i;
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
                     std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + other_byte + carry;
                     data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
@@ -570,10 +570,10 @@ namespace bigint {
             constexpr std::size_t m = other_bits / CHAR_BIT;
             bigint result(static_cast<std::int8_t>(0));
 
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < n; ++i) {
+            for (auto const i: std::views::iota(0uz, n)) {
+                if constexpr (std::endian::native == std::endian::little) {
                     std::uint16_t carry = 0;
-                    for (std::size_t j = 0; j < m; ++j) {
+                    for (auto const j: std::views::iota(0uz, m)) {
                         if (i + j >= n) {
                             break;
                         }
@@ -587,12 +587,10 @@ namespace bigint {
                         std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[i + m]) + carry;
                         result.data_[i + m] = static_cast<std::uint8_t>(sum & 0xFF);
                     }
-                }
-            } else {
-                for (std::size_t i = 0; i < n; ++i) {
+                } else {
                     std::size_t const idx1 = n - 1 - i;
                     std::uint16_t carry = 0;
-                    for (std::size_t j = 0; j < m; ++j) {
+                    for (auto const j: std::views::iota(0uz, m)) {
                         if (i + j >= n) {
                             break;
                         }
@@ -659,8 +657,8 @@ namespace bigint {
             }
 
             std::uint16_t borrow = 0;
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < this_size; ++i) {
+            for (auto const i: std::views::iota(0uz, this_size)) {
+                if constexpr (std::endian::native == std::endian::little) {
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
                     int16_t diff = static_cast<int16_t>(data_[i]) - static_cast<int16_t>(other_byte) - borrow;
                     if (diff < 0) {
@@ -670,9 +668,7 @@ namespace bigint {
                         borrow = 0;
                     }
                     data_[i] = static_cast<std::uint8_t>(diff);
-                }
-            } else {
-                for (std::size_t i = 0; i < this_size; ++i) {
+                } else {
                     std::size_t idx = this_size - 1 - i;
                     std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
                     int16_t diff = static_cast<int16_t>(data_[idx]) - static_cast<int16_t>(other_byte) - borrow;
@@ -718,7 +714,7 @@ namespace bigint {
             bigint remainder(static_cast<int8_t>(0));
             constexpr std::size_t total_bits = bits;
 
-            for (std::size_t i = total_bits; i > 0; --i) {
+            for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
                 remainder <<= static_cast<int8_t>(1);
                 if (this->get_bit(i - 1)) {
                     remainder += static_cast<int8_t>(1);
@@ -762,7 +758,7 @@ namespace bigint {
             bigint remainder(static_cast<int8_t>(0));
             constexpr std::size_t total_bits = bits; // total number of bits in *this
 
-            for (std::size_t i = total_bits; i > 0; --i) {
+            for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
                 remainder <<= static_cast<int8_t>(1);
                 if (this->get_bit(i - 1)) {
                     remainder += static_cast<int8_t>(1);
@@ -793,14 +789,12 @@ namespace bigint {
             std::size_t const bit_shift = shift % 8;
             std::array<std::uint8_t, n> result{};
 
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < n; ++i) {
+            for (auto const i: std::views::iota(0uz, n)) {
+                if constexpr (std::endian::native == std::endian::little) {
                     if (i + byte_shift < n) {
                         result[i + byte_shift] = data_[i];
                     }
-                }
-            } else {
-                for (std::size_t i = 0; i < n; ++i) {
+                } else {
                     if (i >= byte_shift) {
                         result[i - byte_shift] = data_[i];
                     }
@@ -808,7 +802,7 @@ namespace bigint {
             }
 
             std::uint16_t carry = 0;
-            for (std::size_t i = 0; i < n; ++i) {
+            for (auto const i: std::views::iota(0uz, n)) {
                 std::uint16_t const temp = (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry;
                 result[i] = static_cast<std::uint8_t>(temp & 0xFF);
                 carry = temp >> 8;
@@ -852,8 +846,8 @@ namespace bigint {
             std::size_t const bit_shift = shift % 8;
             std::array<std::uint8_t, n> result{};
 
-            if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < n; ++i) {
+            for (auto const i: std::views::iota(0uz, n)) {
+                if constexpr (std::endian::native == std::endian::little) {
                     std::uint8_t const lower = (i + byte_shift < n) ? data_[i + byte_shift] : fill;
                     std::uint8_t const upper = (i + byte_shift + 1 < n) ? data_[i + byte_shift + 1] : fill;
                     if (bit_shift == 0) {
@@ -861,9 +855,7 @@ namespace bigint {
                     } else {
                         result[i] = static_cast<std::uint8_t>((lower >> bit_shift) | (upper << (8 - bit_shift)));
                     }
-                }
-            } else {
-                for (std::size_t i = 0; i < n; ++i) {
+                } else {
                     int const src = static_cast<int>(i) - static_cast<int>(byte_shift);
                     std::uint8_t const lower = (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill;
                     int const src2 = src - 1;
@@ -933,7 +925,7 @@ namespace bigint {
         }
 
         constexpr bigint &operator&=(bigint const &other) {
-            for (std::size_t i = 0; i < data_.size(); ++i) {
+            for (auto const i: std::views::iota(0uz, data_.size())) {
                 data_[i] &= other.data_[i];
             }
             return *this;
@@ -946,7 +938,7 @@ namespace bigint {
         }
 
         constexpr bigint &operator|=(bigint const &other) {
-            for (std::size_t i = 0; i < data_.size(); ++i) {
+            for (auto const i: std::views::iota(0uz, data_.size())) {
                 data_[i] |= other.data_[i];
             }
             return *this;
@@ -959,7 +951,7 @@ namespace bigint {
         }
 
         constexpr bigint &operator^=(bigint const &other) {
-            for (std::size_t i = 0; i < data_.size(); ++i) {
+            for (auto const i: std::views::iota(0uz, data_.size())) {
                 data_[i] ^= other.data_[i];
             }
             return *this;
@@ -999,7 +991,7 @@ namespace bigint {
 
         if (base_flag == std::ios_base::hex) {
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = data.data_.size() - 1; i > 0; --i) {
+                for (auto const i: std::views::reverse(std::views::iota(1uz, data.data_.size()))) {
                     if (result.empty() and data.data_[i - 1] == 0 and i != 1) {
                         continue;
                     }
@@ -1008,7 +1000,7 @@ namespace bigint {
                     result.append(buffer.data());
                 }
             } else {
-                for (std::size_t i = 0; i < data.data_.size(); ++i) {
+                for (auto const i: std::views::iota(0uz, data.data_.size())) {
                     if (result.empty() and data.data_[i] == 0 and i != 1) {
                         continue;
                     }
