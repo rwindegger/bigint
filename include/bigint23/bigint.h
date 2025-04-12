@@ -162,9 +162,9 @@ namespace bigint {
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr std::strong_ordering operator
         <=>(bigint<other_bits, other_is_signed> const &other) const {
-            constexpr std::size_t lhs_size = bits / CHAR_BIT;
-            constexpr std::size_t rhs_size = other_bits / CHAR_BIT;
-            constexpr std::size_t max_size = (lhs_size > rhs_size ? lhs_size : rhs_size);
+            static constexpr std::size_t lhs_size = bits / CHAR_BIT;
+            static constexpr std::size_t rhs_size = other_bits / CHAR_BIT;
+            static constexpr std::size_t max_size = (lhs_size > rhs_size ? lhs_size : rhs_size);
 
             std::array<std::uint8_t, max_size> lhs_extended{};
             std::array<std::uint8_t, max_size> rhs_extended{};
@@ -332,8 +332,8 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator+=(bigint<other_bits, other_is_signed> const &other) {
-            constexpr std::size_t this_size = bits / CHAR_BIT;
-            constexpr std::size_t other_size = other_bits / CHAR_BIT;
+            static constexpr std::size_t this_size = bits / CHAR_BIT;
+            static constexpr std::size_t other_size = other_bits / CHAR_BIT;
             std::uint16_t carry = 0;
 
             std::uint8_t fill = 0;
@@ -405,8 +405,8 @@ namespace bigint {
                 }
             }
 
-            constexpr std::size_t n = bits / CHAR_BIT;
-            constexpr std::size_t m = other_bits / CHAR_BIT;
+            static constexpr std::size_t n = bits / CHAR_BIT;
+            static constexpr std::size_t m = other_bits / CHAR_BIT;
             bigint result(static_cast<std::int8_t>(0));
 
             for (auto const i: std::views::iota(0uz, n)) {
@@ -479,8 +479,8 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator-=(bigint<other_bits, other_is_signed> const &other) {
-            constexpr std::size_t this_size = bits / CHAR_BIT;
-            constexpr std::size_t other_size = other_bits / CHAR_BIT;
+            static constexpr std::size_t this_size = bits / CHAR_BIT;
+            static constexpr std::size_t other_size = other_bits / CHAR_BIT;
 
             std::uint8_t fill = 0;
             if constexpr (other_is_signed and other_size <= this_size) {
@@ -551,7 +551,7 @@ namespace bigint {
 
             bigint quotient(static_cast<int8_t>(0));
             bigint remainder(static_cast<int8_t>(0));
-            constexpr std::size_t total_bits = bits;
+            static constexpr std::size_t total_bits = bits;
 
             for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
                 remainder <<= static_cast<int8_t>(1);
@@ -595,7 +595,7 @@ namespace bigint {
 
             bigint quotient(static_cast<int8_t>(0));
             bigint remainder(static_cast<int8_t>(0));
-            constexpr std::size_t total_bits = bits; // total number of bits in *this
+            static constexpr std::size_t total_bits = bits; // total number of bits in *this
 
             for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
                 remainder <<= static_cast<int8_t>(1);
@@ -619,7 +619,7 @@ namespace bigint {
         }
 
         constexpr bigint &operator<<=(std::size_t const shift) {
-            constexpr std::size_t n = bits / CHAR_BIT;
+            static constexpr std::size_t n = bits / CHAR_BIT;
             if (shift == 0) {
                 return *this;
             }
@@ -658,7 +658,7 @@ namespace bigint {
         }
 
         constexpr bigint &operator>>=(std::size_t const shift) {
-            constexpr std::size_t n = bits / CHAR_BIT;
+            static constexpr std::size_t n = bits / CHAR_BIT;
             if (shift == 0) {
                 return *this;
             }
