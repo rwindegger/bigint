@@ -270,83 +270,17 @@ namespace bigint {
             }
 
             if constexpr (std::endian::native == std::endian::little) {
-                for (auto const i: std::views::reverse(std::views::iota(1uz, max_size + 1))) {
-                    if constexpr (!is_signed and !other_is_signed) {
-                        auto const a = lhs_extended[i - 1];
-                        auto const b = rhs_extended[i - 1];
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else if constexpr (!is_signed and other_is_signed) {
-                        auto const a = lhs_extended[i - 1];
-                        auto const b = static_cast<std::int8_t>(rhs_extended[i - 1]);
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else if constexpr (is_signed and !other_is_signed) {
-                        auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
-                        auto const b = rhs_extended[i - 1];
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else {
-                        auto const a = static_cast<std::int8_t>(lhs_extended[i - 1]);
-                        auto const b = static_cast<std::int8_t>(rhs_extended[i - 1]);
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
+                for (auto const i: std::views::reverse(std::views::iota(0uz, max_size))) {
+                    std::strong_ordering value{std::strong_ordering::equal};
+                    if (spaceship_check_index<max_size, other_is_signed>(lhs_extended, rhs_extended, i, value)) {
+                        return value;
                     }
                 }
             } else {
-                for (auto const i: std::views::iota(1u, max_size)) {
-                    if constexpr (!is_signed and !other_is_signed) {
-                        auto const a = lhs_extended[i];
-                        auto const b = rhs_extended[i];
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else if constexpr (!is_signed and other_is_signed) {
-                        auto const a = lhs_extended[i];
-                        auto const b = static_cast<std::int8_t>(rhs_extended[i]);
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else if constexpr (is_signed and !other_is_signed) {
-                        auto const a = static_cast<std::int8_t>(lhs_extended[i]);
-                        auto const b = rhs_extended[i];
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
-                    } else {
-                        auto const a = static_cast<std::int8_t>(lhs_extended[i]);
-                        auto const b = static_cast<std::int8_t>(rhs_extended[i]);
-                        if (a < b) {
-                            return std::strong_ordering::less;
-                        }
-                        if (a > b) {
-                            return std::strong_ordering::greater;
-                        }
+                for (auto const i: std::views::iota(0u, max_size)) {
+                    std::strong_ordering value{std::strong_ordering::equal};
+                    if (spaceship_check_index<max_size, other_is_signed>(lhs_extended, rhs_extended, i, value)) {
+                        return value;
                     }
                 }
             }
@@ -983,6 +917,58 @@ namespace bigint {
                 multiply_by(base);
                 add_value(digit);
             }
+        }
+
+        template<std::size_t max_size, bool other_is_signed>
+        constexpr bool spaceship_check_index(std::array<std::uint8_t, max_size> lhs_extended,
+                                             std::array<std::uint8_t, max_size> rhs_extended,
+                                             std::size_t const i, std::strong_ordering &value) const {
+            if constexpr (!is_signed and !other_is_signed) {
+                auto const a = lhs_extended[i];
+                auto const b = rhs_extended[i];
+                if (a < b) {
+                    value = std::strong_ordering::less;
+                    return true;
+                }
+                if (a > b) {
+                    value = std::strong_ordering::greater;
+                    return true;
+                }
+            } else if constexpr (!is_signed and other_is_signed) {
+                auto const a = lhs_extended[i];
+                auto const b = static_cast<std::int8_t>(rhs_extended[i]);
+                if (a < b) {
+                    value = std::strong_ordering::less;
+                    return true;
+                }
+                if (a > b) {
+                    value = std::strong_ordering::greater;
+                    return true;
+                }
+            } else if constexpr (is_signed and !other_is_signed) {
+                auto const a = static_cast<std::int8_t>(lhs_extended[i]);
+                auto const b = rhs_extended[i];
+                if (a < b) {
+                    value = std::strong_ordering::less;
+                    return true;
+                }
+                if (a > b) {
+                    value = std::strong_ordering::greater;
+                    return true;
+                }
+            } else {
+                auto const a = static_cast<std::int8_t>(lhs_extended[i]);
+                auto const b = static_cast<std::int8_t>(rhs_extended[i]);
+                if (a < b) {
+                    value = std::strong_ordering::less;
+                    return true;
+                }
+                if (a > b) {
+                    value = std::strong_ordering::greater;
+                    return true;
+                }
+            }
+            return false;
         }
     };
 
