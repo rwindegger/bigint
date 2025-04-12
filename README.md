@@ -33,7 +33,7 @@ A header-only C++ library provides a fixed-width arbitrary-precision integer typ
 Simply include the header in your project:
 
 ```cpp
-#include "bigint.h"
+#include "bigint.hpp"
 ```
 
 ### Creating bigints

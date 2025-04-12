@@ -2,7 +2,7 @@
 // Created by Rene Windegger on 28/03/2025.
 //
 
-#include <bigint23/bigint.h>
+#include <bigint23/bigint.hpp>
 #include <gtest/gtest.h>
 #include <sstream>
 

@@ -2,7 +2,7 @@
 // Created by Rene Windegger on 03/04/2025.
 //
 
-#include <bigint23/bigint.h>
+#include <bigint23/bigint.hpp>
 #include <gtest/gtest.h>
 
 TEST(bigint23, byteswap_test) {

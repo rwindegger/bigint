@@ -12,7 +12,7 @@ include(GNUInstallDirs)
 add_library(
         bigint
         INTERFACE
-        include/bigint23/bigint.h
+        include/bigint23/bigint.hpp
 )
 add_library(bigint::bigint ALIAS bigint)
 
