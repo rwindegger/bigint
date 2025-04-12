@@ -99,7 +99,7 @@ namespace bigint {
         }
 
         constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
-            std::fill(data_.begin(), data_.end(), 0);
+            data_.fill(0);
             for (char const c: str) {
                 if (c == '\'' or c == ' ') {
                     continue;
@@ -838,7 +838,7 @@ namespace bigint {
             }
 
             if (shift >= bits) {
-                std::fill(data_.begin(), data_.end(), fill);
+                data_.fill(fill);
                 return *this;
             }
 
