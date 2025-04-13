@@ -1,5 +1,5 @@
 # bigint
-A header-only C++ library provides a fixed-width arbitrary-precision integer type called `bigint`. It supports both signed and unsigned numbers with a customizable bit-width. The class implements a wide range of arithmetic, bitwise, and comparison operators, making it suitable for tasks that require precise control over large integers.
+This header-only C++ library provides an arbitrary-fixed-width integer type called `bigint`. It supports both signed and unsigned numbers with a customizable bit-width. The class implements a wide range of arithmetic, bitwise, and comparison operators, making it suitable for tasks that require precise control over large integers.
 
 ## Features
 - **Customizable Bit-Width:**  
@@ -41,13 +41,13 @@ Construct a `bigint` from an integral type or a string:
 
 ```cpp
 // Create a 128-bit signed bigint from an integer:
-bigint::bigint<128, true> a(123456789);
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> a(123456789);
 
 // Create a 128-bit unsigned bigint from a decimal string:
-bigint::bigint<128, false> b("9876543210");
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned> b("9876543210");
 
 // Create a 128-bit signed bigint from a hexadecimal string:
-bigint::bigint<128, true> c("0x1A2B3C4D");
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> c("0x1A2B3C4D");
 ```
 
 ### Performing Arithmetic and Bitwise Operations
@@ -65,10 +65,10 @@ a -= 50;
 a *= -3;
 a /= 7;
 
-bigint::bigint<128, true> d = ~a;   // Bitwise NOT
-bigint::bigint<128, true> e = a & c;  // Bitwise AND
-bigint::bigint<128, true> f = a | c;  // Bitwise OR
-bigint::bigint<128, true> g = a ^ c;  // Bitwise XOR
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> d = ~a;   // Bitwise NOT
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> e = a & c;  // Bitwise AND
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> f = a | c;  // Bitwise OR
+bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed> g = a ^ c;  // Bitwise XOR
 
 a <<= 4;  // Left shift
 b >>= 8;  // Right shift

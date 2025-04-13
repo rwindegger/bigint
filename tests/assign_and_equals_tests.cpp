@@ -7,10 +7,10 @@
 
 namespace {
     TEST(bigint23, assign_and_equals_8bit_test) {
-        using uint128_t = bigint::bigint<128, false>;
-        using int128_t = bigint::bigint<128, true>;
-        using u8 = bigint::bigint<8, false>;
-        using i8 = bigint::bigint<8, true>;
+        using uint128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned>;
+        using int128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed>;
+        using u8 = bigint::bigint<bigint::BitWidth{8}, bigint::Signedness::Unsigned>;
+        using i8 = bigint::bigint<bigint::BitWidth{8}, bigint::Signedness::Signed>;
 
         uint128_t const a = static_cast<std::uint8_t>(42);
         ASSERT_EQ(static_cast<std::uint8_t>(42), a);
@@ -35,10 +35,10 @@ namespace {
     }
 
     TEST(bigint23, assign_and_equals_16bit_test) {
-        using uint128_t = bigint::bigint<128, false>;
-        using int128_t = bigint::bigint<128, true>;
-        using u16 = bigint::bigint<16, false>;
-        using i16 = bigint::bigint<16, true>;
+        using uint128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned>;
+        using int128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed>;
+        using u16 = bigint::bigint<bigint::BitWidth{16}, bigint::Signedness::Unsigned>;
+        using i16 = bigint::bigint<bigint::BitWidth{16}, bigint::Signedness::Signed>;
 
         uint128_t const a = static_cast<std::uint16_t>(42);
         ASSERT_EQ(static_cast<std::uint16_t>(42), a);
@@ -63,10 +63,10 @@ namespace {
     }
 
     TEST(bigint23, assign_and_equals_32bit_test) {
-        using uint128_t = bigint::bigint<128, false>;
-        using int128_t = bigint::bigint<128, true>;
-        using u32 = bigint::bigint<32, false>;
-        using i32 = bigint::bigint<32, true>;
+        using uint128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned>;
+        using int128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed>;
+        using u32 = bigint::bigint<bigint::BitWidth{32}, bigint::Signedness::Unsigned>;
+        using i32 = bigint::bigint<bigint::BitWidth{32}, bigint::Signedness::Signed>;
 
         uint128_t const a = static_cast<std::uint32_t>(42);
         ASSERT_EQ(static_cast<std::uint32_t>(42), a);
@@ -91,10 +91,10 @@ namespace {
     }
 
     TEST(bigint23, assign_and_equals_64bit_test) {
-        using uint128_t = bigint::bigint<128, false>;
-        using int128_t = bigint::bigint<128, true>;
-        using u64 = bigint::bigint<64, false>;
-        using i64 = bigint::bigint<64, true>;
+        using uint128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned>;
+        using int128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed>;
+        using u64 = bigint::bigint<bigint::BitWidth{64}, bigint::Signedness::Unsigned>;
+        using i64 = bigint::bigint<bigint::BitWidth{64}, bigint::Signedness::Signed>;
 
         uint128_t const a = static_cast<std::uint64_t>(42);
         ASSERT_EQ(static_cast<std::uint64_t>(42), a);
@@ -119,14 +119,14 @@ namespace {
     }
 
     TEST(bigint23, assign_and_equals_large_test) {
-        using uint128_t = bigint::bigint<128, false>;
-        using int128_t = bigint::bigint<128, true>;
-        using uint256_t = bigint::bigint<256, false>;
-        using int256_t = bigint::bigint<256, true>;
-        using u16 = bigint::bigint<16, false>;
-        using u32 = bigint::bigint<32, false>;
-        using i16 = bigint::bigint<16, true>;
-        using i32 = bigint::bigint<32, true>;
+        using uint128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Unsigned>;
+        using int128_t = bigint::bigint<bigint::BitWidth{128}, bigint::Signedness::Signed>;
+        using uint256_t = bigint::bigint<bigint::BitWidth{256}, bigint::Signedness::Unsigned>;
+        using int256_t = bigint::bigint<bigint::BitWidth{256}, bigint::Signedness::Signed>;
+        using u16 = bigint::bigint<bigint::BitWidth{16}, bigint::Signedness::Unsigned>;
+        using u32 = bigint::bigint<bigint::BitWidth{32}, bigint::Signedness::Unsigned>;
+        using i16 = bigint::bigint<bigint::BitWidth{16}, bigint::Signedness::Signed>;
+        using i32 = bigint::bigint<bigint::BitWidth{32}, bigint::Signedness::Signed>;
 
         uint128_t const pos_uint = static_cast<std::uint64_t>(42);
         uint256_t const b = pos_uint;
