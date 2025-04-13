@@ -42,9 +42,10 @@ namespace bigint {
             data_.fill(fill);
 
             if constexpr (std::endian::native == std::endian::little) {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(std::addressof(data)), sizeof(T),
+                            data_.begin());
             } else {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(std::addressof(data)), sizeof(T),
                             data_.end() - sizeof(T));
             }
         }
@@ -153,7 +154,7 @@ namespace bigint {
             extended.fill(fill);
 
             if constexpr (std::endian::native == std::endian::little) {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(&other), sizeof(T), extended.begin());
                 for (auto const i: std::views::reverse(std::views::iota(1uz, extended.size() + 1))) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<std::int8_t>(data_[i - 1]) < static_cast<std::int8_t>(extended[i - 1])) {
@@ -172,7 +173,8 @@ namespace bigint {
                     }
                 }
             } else {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.end() - sizeof(T));
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(&other), sizeof(T),
+                            extended.end() - sizeof(T));
                 for (auto const i: std::views::iota(0uz, extended.size())) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<std::int8_t>(data_[i]) < static_cast<std::int8_t>(extended[i])) {
@@ -214,9 +216,9 @@ namespace bigint {
             extended.fill(fill);
 
             if constexpr (std::endian::native == std::endian::little) {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(&other), sizeof(T), extended.begin());
             } else {
-                std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T),
+                std::copy_n(reinterpret_cast<std::uint8_t const * const>(&other), sizeof(T),
                             extended.begin() + (extended.size() - sizeof(T)));
             }
 
@@ -653,7 +655,8 @@ namespace bigint {
 
             auto carry = std::uint16_t{0};
             for (auto const i: std::views::iota(0uz, n)) {
-                auto const temp = static_cast<std::uint16_t>((static_cast<std::uint16_t>(result[i]) << bit_shift) | carry);
+                auto const temp = static_cast<std::uint16_t>(
+                    (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry);
                 result[i] = static_cast<std::uint8_t>(temp & 0xFF);
                 carry = temp >> 8;
             }
