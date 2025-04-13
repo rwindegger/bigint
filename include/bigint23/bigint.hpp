@@ -353,13 +353,15 @@ namespace bigint {
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
                     auto const other_byte = std::uint16_t{i < other_size ? other.data_[i] : fill};
-                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[i]) + other_byte + carry};
+                    auto const sum = static_cast<std::uint16_t>(
+                        static_cast<std::uint16_t>(data_[i]) + other_byte + carry);
                     data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 } else {
                     auto const idx = std::size_t{this_size - 1 - i};
                     auto const other_byte = std::uint16_t{i < other_size ? other.data_[other_size - 1 - i] : fill};
-                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[idx]) + other_byte + carry};
+                    auto const sum = static_cast<std::uint16_t>(
+                        static_cast<std::uint16_t>(data_[idx]) + other_byte + carry);
                     data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 }
@@ -504,29 +506,29 @@ namespace bigint {
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
                     auto const other_byte = std::uint16_t{i < other_size ? other.data_[i] : fill};
-                    auto diff = std::int16_t{
+                    auto diff = static_cast<std::int16_t>(
                         static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) - borrow
-                    };
+                    );
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
                     } else {
                         borrow = 0;
                     }
-                    data_[i] = std::uint8_t{diff};
+                    data_[i] = static_cast<std::uint8_t>(diff);
                 } else {
                     auto idx = std::size_t{this_size - 1 - i};
                     auto const other_byte = std::uint16_t{i < other_size ? other.data_[other_size - 1 - i] : fill};
-                    auto diff = std::int16_t{
+                    auto diff = static_cast<std::int16_t>(
                         static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) - borrow
-                    };
+                    );
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
                     } else {
                         borrow = 0;
                     }
-                    data_[idx] = std::uint8_t{diff};
+                    data_[idx] = static_cast<std::uint8_t>(diff);
                 }
             }
             return *this;
@@ -651,8 +653,8 @@ namespace bigint {
 
             auto carry = std::uint16_t{0};
             for (auto const i: std::views::iota(0uz, n)) {
-                auto const temp = std::uint16_t{(static_cast<std::uint16_t>(result[i]) << bit_shift) | carry};
-                result[i] = std::uint8_t{temp & 0xFF};
+                auto const temp = static_cast<std::uint16_t>((static_cast<std::uint16_t>(result[i]) << bit_shift) | carry);
+                result[i] = static_cast<std::uint8_t>(temp & 0xFF);
                 carry = temp >> 8;
             }
 
@@ -696,26 +698,22 @@ namespace bigint {
 
             for (auto const i: std::views::iota(0uz, n)) {
                 if constexpr (std::endian::native == std::endian::little) {
-                    auto const lower = std::uint8_t{(i + byte_shift < n) ? data_[i + byte_shift] : fill};
-                    auto const upper = std::uint8_t{(i + byte_shift + 1 < n) ? data_[i + byte_shift + 1] : fill};
+                    auto const lower = (i + byte_shift < n) ? data_[i + byte_shift] : fill;
+                    auto const upper = (i + byte_shift + 1 < n) ? data_[i + byte_shift + 1] : fill;
                     if (bit_shift == 0) {
                         result[i] = lower;
                     } else {
-                        result[i] = std::uint8_t{(lower >> bit_shift) | (upper << (8 - bit_shift))};
+                        result[i] = static_cast<std::uint8_t>((lower >> bit_shift) | (upper << (8 - bit_shift)));
                     }
                 } else {
                     auto const src = static_cast<int>(i) - static_cast<int>(byte_shift);
-                    auto const lower = std::uint8_t{
-                        (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill
-                    };
+                    auto const lower = (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill;
                     auto const src2 = src - 1;
-                    auto const higher = std::uint8_t{
-                        (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill
-                    };
+                    auto const higher = (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill;
                     if (bit_shift == 0) {
                         result[i] = lower;
                     } else {
-                        result[i] = std::uint8_t{(lower >> bit_shift) | (higher << (8 - bit_shift))};
+                        result[i] = static_cast<std::uint8_t>((lower >> bit_shift) | (higher << (8 - bit_shift)));
                     }
                 }
             }
@@ -870,14 +868,14 @@ namespace bigint {
             if constexpr (std::endian::native == std::endian::little) {
                 for (auto const i: std::views::iota(0uz, data_.size())) {
                     auto const prod = std::uint32_t{static_cast<std::uint32_t>(data_[i]) * multiplier + carry};
-                    data_[i] = std::uint8_t{prod & 0xFF};
+                    data_[i] = static_cast<std::uint8_t>(prod & 0xFF);
                     carry = prod >> 8;
                 }
             } else {
                 for (auto const i: std::views::reverse(std::views::iota(1uz, data_.size() + 1))) {
                     auto const idx = std::size_t{i - 1};
                     auto const prod = std::uint32_t{static_cast<std::uint32_t>(data_[idx]) * multiplier + carry};
-                    data_[idx] = std::uint8_t{prod & 0xFF};
+                    data_[idx] = static_cast<std::uint8_t>(prod & 0xFF);
                     carry = prod >> 8;
                 }
             }
@@ -890,15 +888,15 @@ namespace bigint {
             auto carry = std::uint16_t{value};
             if constexpr (std::endian::native == std::endian::little) {
                 for (auto i = 0uz; i < data_.size() and carry; ++i) {
-                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[i]) + carry};
-                    data_[i] = std::uint8_t{sum & 0xFF};
+                    auto const sum = static_cast<std::uint16_t>(static_cast<std::uint16_t>(data_[i]) + carry);
+                    data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 }
             } else {
                 for (auto i = data_.size(); i > 0uz and carry; --i) {
                     auto const idx = std::size_t{i - 1};
-                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[idx]) + carry};
-                    data_[idx] = std::uint8_t{sum & 0xFF};
+                    auto const sum = static_cast<std::uint16_t>(static_cast<std::uint16_t>(data_[idx]) + carry);
+                    data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 }
             }
