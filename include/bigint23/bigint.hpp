@@ -14,6 +14,7 @@
 #ifndef bigint_DISABLE_IO
 #include <iostream>
 #endif
+#include <memory>
 #include <ranges>
 #include <regex>
 #include <stdexcept>
@@ -826,6 +827,15 @@ namespace bigint {
 
 #ifndef bigint_DISABLE_IO
         template<std::size_t other_bits, bool other_is_signed>
+        friend constexpr std::ostream &print_hex(std::ostream &, bigint<other_bits, other_is_signed> const &, bool);
+
+        template<std::size_t other_bits, bool other_is_signed>
+        friend constexpr std::ostream &print_oct(std::ostream &, bigint<other_bits, other_is_signed> const &);
+
+        template<std::size_t other_bits, bool other_is_signed>
+        friend constexpr std::ostream &print_dec(std::ostream &, bigint<other_bits, other_is_signed> const &);
+
+        template<std::size_t other_bits, bool other_is_signed>
         friend constexpr std::ostream &operator<<(std::ostream &, bigint<other_bits, other_is_signed> const &);
 
         template<std::size_t other_bits, bool other_is_signed>
@@ -987,81 +997,121 @@ namespace bigint {
 
 #ifndef bigint_DISABLE_IO
     template<std::size_t bits, bool is_signed>
+    constexpr std::ostream &print_hex(std::ostream &os, bigint<bits, is_signed> const &data, bool const use_uppercase) {
+        auto const &buf = data.data_;
+        auto start = buf.size();
+        while (start > 1 and buf[start - 1] == 0) {
+            --start;
+        }
+
+        if constexpr (std::endian::native == std::endian::little) {
+            for (auto const i: std::views::reverse(std::views::iota(0uz, start))) {
+                auto local = std::array<char, 3>{};
+                std::snprintf(
+                    local.data(),
+                    local.size(),
+                    use_uppercase ? "%02X" : "%02x",
+                    buf[i]
+                );
+                os.write(local.data(), local.size() - 1);
+            }
+        } else {
+            for (auto const i: std::views::iota(0uz, start)) {
+                auto local = std::array<char, 3>{};
+                std::snprintf(
+                    local.data(),
+                    local.size(),
+                    use_uppercase ? "%02X" : "%02x",
+                    buf[i]
+                );
+                os.write(local.data(), local.size() - 1);
+            }
+        }
+
+        return os;
+    }
+
+    template<std::size_t bits, bool is_signed>
+    constexpr std::ostream &print_oct(std::ostream &os, bigint<bits, is_signed> const &data) {
+        auto temp = data;
+
+        if (temp == std::int8_t{0}) {
+            os.put('0');
+            return os;
+        }
+
+        constexpr auto max_oct_digits = std::size_t{(bits / 3) + 2};
+        auto buffer = std::array<char, max_oct_digits>{};
+        auto pos = buffer.end();
+
+        while (temp != std::int8_t{0}) {
+            auto r = temp % std::int8_t{8};
+            auto digit = r.data_[0];
+            *--pos = static_cast<char>('0' + digit);
+            temp /= std::int8_t{8};
+        }
+
+        auto const length = static_cast<std::size_t>(buffer.end() - pos);
+        os.write(std::to_address(pos), length);
+        return os;
+    }
+
+    template<std::size_t bits, bool is_signed>
+    constexpr std::ostream &print_dec(std::ostream &os, bigint<bits, is_signed> const &data) {
+        auto temp = data;
+
+        if (temp == std::int8_t{0}) {
+            os.put('0');
+            return os;
+        }
+
+        auto negative = false;
+        if constexpr (is_signed) {
+            if (temp < std::int8_t{0}) {
+                negative = true;
+                temp = -temp;
+            }
+        }
+
+        constexpr auto max_dec_digits = std::size_t{static_cast<std::size_t>(bits * 0.3010299957) + 3}; //std::log10(2)
+        auto buffer = std::array<char, max_dec_digits>{};
+        auto pos = buffer.end();
+
+        while (temp != std::int8_t{0}) {
+            auto r = temp % std::int8_t{10};
+            auto digit = r.data_[0];
+            *--pos = static_cast<char>('0' + digit);
+            temp /= std::int8_t{10};
+        }
+
+        if (negative) {
+            os.put('-');
+        }
+
+        auto const length = static_cast<std::size_t>(buffer.end() - pos);
+        os.write(std::to_address(pos), length);
+        return os;
+    }
+
+    template<std::size_t bits, bool is_signed>
     constexpr std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
         auto const flags = os.flags();
-        auto result = std::string{};
-
         auto const base_flag = flags & std::ios_base::basefield;
         auto const use_uppercase = (flags & std::ios_base::uppercase) != 0;
 
-        if (base_flag == std::ios_base::hex) {
-            if constexpr (std::endian::native == std::endian::little) {
-                for (auto const i: std::views::reverse(std::views::iota(1uz, data.data_.size()))) {
-                    if (result.empty() and data.data_[i - 1] == 0 and i != 1) {
-                        continue;
-                    }
-                    auto buffer = std::array<char, 3>{};
-                    std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i - 1]);
-                    result.append(buffer.data());
-                }
-            } else {
-                for (auto const i: std::views::iota(0uz, data.data_.size())) {
-                    if (result.empty() and data.data_[i] == 0 and i != 1) {
-                        continue;
-                    }
-                    auto buffer = std::array<char, 3>{};
-                    std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i]);
-                    result.append(buffer.data());
-                }
-            }
-        } else if (base_flag == std::ios_base::oct) {
-            auto temp = bigint<bits, is_signed>{data};
-            if (temp == std::int8_t{0}) {
-                result = "0";
-            } else {
-                while (temp != std::int8_t{0}) {
-                    auto r = temp % static_cast<std::int8_t>(8);
-                    auto digit = 0;
-                    if constexpr (std::endian::native == std::endian::little) {
-                        digit = r.data_[0];
-                    } else {
-                        digit = r.data_[r.data_.size() - 1];
-                    }
-                    result.push_back('0' + digit);
-                    temp /= std::int8_t{8};
-                }
-                std::ranges::reverse(result);
-            }
-        } else if (base_flag == std::ios_base::dec) {
-            auto temp = bigint<bits, is_signed>{data};
-            auto negative = false;
-            if constexpr (is_signed) {
-                if (temp < std::int8_t{0}) {
-                    negative = true;
-                    temp = -temp;
-                }
-            }
-            if (temp == static_cast<std::int8_t>(0)) {
-                result = "0";
-            } else {
-                while (temp != static_cast<std::int8_t>(0)) {
-                    auto r = temp % static_cast<std::int8_t>(10);
-                    auto digit = 0;
-                    if constexpr (std::endian::native == std::endian::little) {
-                        digit = r.data_[0];
-                    } else {
-                        digit = r.data_[r.data_.size() - 1];
-                    }
-                    result.push_back('0' + digit);
-                    temp /= static_cast<std::int8_t>(10);
-                }
-                std::ranges::reverse(result);
-                if (negative) {
-                    result.insert(result.begin(), '-');
-                }
-            }
+        switch (base_flag) {
+            case std::ios_base::hex:
+                print_hex(os, data, use_uppercase);
+                break;
+            case std::ios_base::oct:
+                print_oct(os, data);
+                break;
+            case std::ios_base::dec:
+            default:
+                print_dec(os, data);
+                break;
         }
-        os << result;
+
         return os;
     }
 

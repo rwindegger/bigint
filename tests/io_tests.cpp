@@ -32,7 +32,7 @@ namespace {
         bigint::bigint<128, true> const a(-123456789);
         std::ostringstream oss;
         oss << std::hex << std::nouppercase << a;
-        ASSERT_EQ(oss.str(), "fffffffffffffffffffffff8a432eb");
+        ASSERT_EQ(oss.str(), "fffffffffffffffffffffffff8a432eb");
     }
 
     TEST(bigint23, octal_unsigned_os_test) {
