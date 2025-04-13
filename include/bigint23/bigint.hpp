@@ -15,6 +15,7 @@
 #include <iostream>
 #endif
 #include <ranges>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -33,33 +34,31 @@ namespace bigint {
         [[nodiscard]] constexpr bigint(T const data) {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't assign values with a larger bit count than the target type.");
-            std::uint8_t fill = 0;
+
+            auto fill = std::uint8_t{0};
             if constexpr (std::is_signed_v<T>) {
                 fill = (data < 0 ? 0xFF : 0);
             }
+            data_.fill(fill);
 
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T), data_.begin());
-                std::fill_n(data_.begin() + sizeof(T), data_.size() - sizeof(T), fill);
             } else {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(std::addressof(data)), sizeof(T),
                             data_.end() - sizeof(T));
-                std::fill_n(data_.begin(), data_.size() - sizeof(T), fill);
             }
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint(bigint<other_bits, other_is_signed> const &other) {
             static_assert(bits >= other_bits, "Can't assign values with a larger bit count than the target type.");
+
+            auto fill = std::uint8_t{0};
             if constexpr (other_is_signed) {
-                if (other < static_cast<std::int8_t>(0)) {
-                    data_.fill(0xFF);
-                } else {
-                    data_.fill(0);
-                }
-            } else {
-                data_.fill(0);
+                fill = other < std::int8_t{0} ? 0xFF : 0;
             }
+            data_.fill(fill);
+
             if constexpr (std::endian::native == std::endian::little) {
                 for (auto const i: std::views::iota(0uz, other.data_.size())) {
                     data_[i] = other.data_[i];
@@ -145,15 +144,16 @@ namespace bigint {
             static_assert(bits / CHAR_BIT >= sizeof(T),
                           "Can't compare values with a larger bit count than the target type.");
 
-            std::uint8_t fill = 0;
+            auto fill = std::uint8_t{0};
             if constexpr (std::is_signed_v<T>) {
                 fill = (other < 0 ? 0xFF : 0);
             }
 
             std::array<std::uint8_t, bits / CHAR_BIT> extended{};
+            extended.fill(fill);
+
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
-                std::fill_n(extended.begin() + sizeof(T), extended.size() - sizeof(T), fill);
                 for (auto const i: std::views::reverse(std::views::iota(1uz, extended.size() + 1))) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<std::int8_t>(data_[i - 1]) < static_cast<std::int8_t>(extended[i - 1])) {
@@ -173,7 +173,6 @@ namespace bigint {
                 }
             } else {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.end() - sizeof(T));
-                std::fill_n(extended.begin(), extended.size() - sizeof(T), fill);
                 for (auto const i: std::views::iota(0uz, extended.size())) {
                     if constexpr (std::is_signed_v<T>) {
                         if (static_cast<std::int8_t>(data_[i]) < static_cast<std::int8_t>(extended[i])) {
@@ -206,14 +205,17 @@ namespace bigint {
                 }
             }
 
+            auto fill = std::uint8_t{0};
+            if constexpr (std::is_signed_v<T>) {
+                fill = (other < 0 ? 0xFF : 0);
+            }
+
             std::array<std::uint8_t, bits / CHAR_BIT> extended{};
-            std::uint8_t fill = (std::is_signed_v<T> and other < 0) ? 0xFF : 0;
+            extended.fill(fill);
 
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T), extended.begin());
-                std::fill_n(extended.begin() + sizeof(T), extended.size() - sizeof(T), fill);
             } else {
-                std::fill_n(extended.begin(), extended.size() - sizeof(T), fill);
                 std::copy_n(reinterpret_cast<const std::uint8_t *>(&other), sizeof(T),
                             extended.begin() + (extended.size() - sizeof(T)));
             }
@@ -231,7 +233,7 @@ namespace bigint {
             std::array<std::uint8_t, max_size> lhs_extended{};
             std::array<std::uint8_t, max_size> rhs_extended{};
 
-            std::uint8_t lhs_fill = 0;
+            auto lhs_fill = std::uint8_t{0};
             if constexpr (is_signed) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (data_[lhs_size - 1] & 0x80) {
@@ -243,8 +245,9 @@ namespace bigint {
                     }
                 }
             }
+            lhs_extended.fill(lhs_fill);
 
-            std::uint8_t rhs_fill = 0;
+            auto rhs_fill = std::uint8_t{0};
             if constexpr (other_is_signed) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (other.data_[rhs_size - 1] & 0x80) {
@@ -256,16 +259,13 @@ namespace bigint {
                     }
                 }
             }
+            rhs_extended.fill(rhs_fill);
 
             if constexpr (std::endian::native == std::endian::little) {
                 std::copy(data_.begin(), data_.end(), lhs_extended.begin());
-                std::fill(lhs_extended.begin() + lhs_size, lhs_extended.end(), lhs_fill);
                 std::copy(other.data_.begin(), other.data_.end(), rhs_extended.begin());
-                std::fill(rhs_extended.begin() + rhs_size, rhs_extended.end(), rhs_fill);
             } else {
-                std::fill(lhs_extended.begin(), lhs_extended.begin() + (max_size - lhs_size), lhs_fill);
                 std::copy(data_.begin(), data_.end(), lhs_extended.begin() + (max_size - lhs_size));
-                std::fill(rhs_extended.begin(), rhs_extended.begin() + (max_size - rhs_size), rhs_fill);
                 std::copy(other.data_.begin(), other.data_.end(), rhs_extended.begin() + (max_size - rhs_size));
             }
 
@@ -295,19 +295,22 @@ namespace bigint {
             } else {
                 static_assert(bits >= other_bits, "Can't compare values with a larger bit count than the target type.");
                 if constexpr (other_is_signed and !is_signed) {
-                    if (other < static_cast<std::int8_t>(0)) {
+                    if (other < std::int8_t{0}) {
                         return false;
                     }
                 }
 
-                std::uint8_t const fill = (other_is_signed and other < static_cast<std::int8_t>(0)) ? 0xFF : 0;
+                auto fill = std::uint8_t{0};
+                if constexpr (other_is_signed) {
+                    fill = other < std::int8_t{0} ? 0xFF : 0;
+                }
 
                 std::array<std::uint8_t, bits / CHAR_BIT> extended{};
+                extended.fill(fill);
+
                 if constexpr (std::endian::native == std::endian::little) {
                     std::copy_n(other.data_.begin(), other.data_.size(), extended.begin());
-                    std::fill_n(extended.begin() + other.data_.size(), extended.size() - other.data_.size(), fill);
                 } else {
-                    std::fill_n(extended.begin(), extended.size() - other.data_.size(), fill);
                     std::copy_n(other.data_.begin(), other.data_.size(),
                                 extended.begin() + (extended.size() - other.data_.size()));
                 }
@@ -317,13 +320,13 @@ namespace bigint {
 
         template<std::integral T>
         constexpr bigint &operator+=(T const other) {
-            *this += bigint(other);
+            *this += bigint{other};
             return *this;
         }
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint operator+(T const other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result += other;
             return result;
         }
@@ -332,9 +335,9 @@ namespace bigint {
         constexpr bigint &operator+=(bigint<other_bits, other_is_signed> const &other) {
             static constexpr std::size_t this_size = bits / CHAR_BIT;
             static constexpr std::size_t other_size = other_bits / CHAR_BIT;
-            std::uint16_t carry = 0;
+            auto carry = std::uint16_t{0};
 
-            std::uint8_t fill = 0;
+            auto fill = std::uint8_t{0};
             if constexpr (other_is_signed) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (other.data_[other_size - 1] & 0x80) {
@@ -349,14 +352,14 @@ namespace bigint {
 
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
-                    std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + other_byte + carry;
+                    auto const other_byte = std::uint16_t{i < other_size ? other.data_[i] : fill};
+                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[i]) + other_byte + carry};
                     data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 } else {
-                    std::size_t const idx = this_size - 1 - i;
-                    std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + other_byte + carry;
+                    auto const idx = std::size_t{this_size - 1 - i};
+                    auto const other_byte = std::uint16_t{i < other_size ? other.data_[other_size - 1 - i] : fill};
+                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[idx]) + other_byte + carry};
                     data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
                     carry = sum >> 8;
                 }
@@ -366,82 +369,86 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint operator+(bigint<other_bits, other_is_signed> const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result += other;
             return result;
         }
 
         template<std::integral T>
         constexpr bigint &operator*=(T const other) {
-            *this *= bigint(other);
+            *this *= bigint{other};
             return *this;
         }
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint operator*(T const other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result *= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator*=(bigint<other_bits, other_is_signed> const &other) {
-            bool negative_result = false;
-            bigint abs_this(*this);
-            bigint abs_other(other);
+            auto negative_result = false;
+            auto abs_this = bigint{*this};
+            auto abs_other = bigint{other};
 
             if constexpr (is_signed) {
-                if (*this < static_cast<std::int8_t>(0)) {
+                if (*this < std::int8_t{0}) {
                     negative_result = !negative_result;
                     abs_this = -abs_this;
                 }
             }
             if constexpr (other_is_signed) {
-                if (other < static_cast<std::int8_t>(0)) {
+                if (other < std::int8_t{0}) {
                     negative_result = !negative_result;
                     abs_other = -abs_other;
                 }
             }
 
-            static constexpr std::size_t n = bits / CHAR_BIT;
-            static constexpr std::size_t m = other_bits / CHAR_BIT;
-            bigint result(static_cast<std::int8_t>(0));
+            static constexpr auto n = std::size_t{bits / CHAR_BIT};
+            static constexpr auto m = std::size_t{other_bits / CHAR_BIT};
+            auto result = bigint{};
 
             for (auto const i: std::views::iota(0uz, n)) {
                 if constexpr (std::endian::native == std::endian::little) {
-                    std::uint16_t carry = 0;
+                    auto carry = std::uint16_t{0};
                     for (auto const j: std::views::iota(0uz, m)) {
                         if (i + j >= n) {
                             break;
                         }
-                        std::uint32_t product = static_cast<std::uint32_t>(abs_this.data_[i]) *
-                                                static_cast<std::uint32_t>(abs_other.data_[j]);
+                        auto product = std::uint32_t{
+                            static_cast<std::uint32_t>(abs_this.data_[i]) *
+                            static_cast<std::uint32_t>(abs_other.data_[j])
+                        };
                         product += static_cast<std::uint32_t>(result.data_[i + j]) + carry;
                         result.data_[i + j] = static_cast<std::uint8_t>(product & 0xFF);
                         carry = product >> 8;
                     }
                     if (i + m < n) {
-                        std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[i + m]) + carry;
+                        auto const sum = std::uint32_t{static_cast<std::uint32_t>(result.data_[i + m]) + carry};
                         result.data_[i + m] = static_cast<std::uint8_t>(sum & 0xFF);
                     }
                 } else {
-                    std::size_t const idx1 = n - 1 - i;
-                    std::uint16_t carry = 0;
+                    auto const idx1 = std::size_t{n - 1 - i};
+                    auto carry = std::uint16_t{0};
                     for (auto const j: std::views::iota(0uz, m)) {
                         if (i + j >= n) {
                             break;
                         }
-                        std::size_t const idx2 = m - 1 - j;
-                        std::size_t const result_idx = n - 1 - (i + j);
-                        std::uint32_t product = static_cast<std::uint32_t>(abs_this.data_[idx1]) *
-                                                static_cast<std::uint32_t>(abs_other.data_[idx2]);
+                        auto const idx2 = std::size_t{m - 1 - j};
+                        auto const result_idx = std::size_t{n - 1 - (i + j)};
+                        auto product = std::uint32_t{
+                            static_cast<std::uint32_t>(abs_this.data_[idx1]) *
+                            static_cast<std::uint32_t>(abs_other.data_[idx2])
+                        };
                         product += static_cast<std::uint32_t>(result.data_[result_idx]) + carry;
                         result.data_[result_idx] = static_cast<std::uint8_t>(product & 0xFF);
                         carry = product >> 8;
                     }
                     if (i + m < n) {
-                        std::size_t result_idx = n - 1 - (i + m);
-                        std::uint32_t const sum = static_cast<std::uint32_t>(result.data_[result_idx]) + carry;
+                        auto const result_idx = std::size_t{n - 1 - (i + m)};
+                        auto const sum = std::uint32_t{static_cast<std::uint32_t>(result.data_[result_idx]) + carry};
                         result.data_[result_idx] = static_cast<std::uint8_t>(sum & 0xFF);
                     }
                 }
@@ -457,30 +464,30 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint operator*(bigint<other_bits, other_is_signed> const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result *= other;
             return result;
         }
 
         template<std::integral T>
         constexpr bigint &operator-=(T const other) {
-            *this -= bigint(other);
+            *this -= bigint{other};
             return *this;
         }
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint operator-(T const other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result -= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator-=(bigint<other_bits, other_is_signed> const &other) {
-            static constexpr std::size_t this_size = bits / CHAR_BIT;
-            static constexpr std::size_t other_size = other_bits / CHAR_BIT;
+            static constexpr auto this_size = std::size_t{bits / CHAR_BIT};
+            static constexpr auto other_size = std::size_t{other_bits / CHAR_BIT};
 
-            std::uint8_t fill = 0;
+            auto fill = std::uint8_t{0};
             if constexpr (other_is_signed and other_size <= this_size) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (other.data_[other_size - 1] & 0x80) {
@@ -496,28 +503,30 @@ namespace bigint {
             std::uint16_t borrow = 0;
             for (auto const i: std::views::iota(0uz, this_size)) {
                 if constexpr (std::endian::native == std::endian::little) {
-                    std::uint16_t const other_byte = (i < other_size) ? other.data_[i] : fill;
-                    std::int16_t diff = static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) -
-                                        borrow;
+                    auto const other_byte = std::uint16_t{i < other_size ? other.data_[i] : fill};
+                    auto diff = std::int16_t{
+                        static_cast<std::int16_t>(data_[i]) - static_cast<std::int16_t>(other_byte) - borrow
+                    };
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
                     } else {
                         borrow = 0;
                     }
-                    data_[i] = static_cast<std::uint8_t>(diff);
+                    data_[i] = std::uint8_t{diff};
                 } else {
-                    std::size_t idx = this_size - 1 - i;
-                    std::uint16_t const other_byte = (i < other_size) ? other.data_[other_size - 1 - i] : fill;
-                    std::int16_t diff = static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) -
-                                        borrow;
+                    auto idx = std::size_t{this_size - 1 - i};
+                    auto const other_byte = std::uint16_t{i < other_size ? other.data_[other_size - 1 - i] : fill};
+                    auto diff = std::int16_t{
+                        static_cast<std::int16_t>(data_[idx]) - static_cast<std::int16_t>(other_byte) - borrow
+                    };
                     if (diff < 0) {
                         diff += 256;
                         borrow = 1;
                     } else {
                         borrow = 0;
                     }
-                    data_[idx] = static_cast<std::uint8_t>(diff);
+                    data_[idx] = std::uint8_t{diff};
                 }
             }
             return *this;
@@ -525,42 +534,42 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint operator-(bigint<other_bits, other_is_signed> const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result -= other;
             return result;
         }
 
         template<std::integral T>
         constexpr bigint &operator/=(T const other) {
-            *this /= bigint(other);
+            *this /= bigint{other};
             return *this;
         }
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint operator/(T const other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result /= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator/=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == static_cast<std::int8_t>(0)) {
+            if (other == std::int8_t{0}) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(static_cast<std::int8_t>(0));
-            bigint remainder(static_cast<std::int8_t>(0));
-            static constexpr std::size_t total_bits = bits;
+            auto quotient = bigint{};
+            auto remainder = bigint{};
+            static constexpr auto total_bits = std::size_t{bits};
 
-            for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
-                remainder <<= static_cast<std::int8_t>(1);
-                if (this->get_bit(i - 1)) {
-                    remainder += static_cast<std::int8_t>(1);
+            for (auto const i: std::views::reverse(std::views::iota(0uz, total_bits))) {
+                remainder <<= std::int8_t{1};
+                if (this->get_bit(i)) {
+                    remainder += std::int8_t{1};
                 }
                 if (remainder >= other) {
                     remainder -= other;
-                    quotient.set_bit(i - 1, true);
+                    quotient.set_bit(i, true);
                 }
             }
             *this = quotient;
@@ -569,38 +578,38 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint operator/(bigint<other_bits, other_is_signed> const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result /= other;
             return result;
         }
 
         template<std::integral T>
         constexpr bigint &operator%=(T const other) {
-            *this %= bigint(other);
+            *this %= bigint{other};
             return *this;
         }
 
         template<std::integral T>
         [[nodiscard]] constexpr bigint operator%(T const other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result %= other;
             return result;
         }
 
         template<std::size_t other_bits, bool other_is_signed>
         constexpr bigint &operator%=(bigint<other_bits, other_is_signed> const &other) {
-            if (other == static_cast<std::int8_t>(0)) {
+            if (other == std::int8_t{0}) {
                 throw std::overflow_error("Division by zero");
             }
 
-            bigint quotient(static_cast<std::int8_t>(0));
-            bigint remainder(static_cast<std::int8_t>(0));
-            static constexpr std::size_t total_bits = bits; // total number of bits in *this
+            auto quotient = bigint{};
+            auto remainder = bigint{};
+            static constexpr auto total_bits = std::size_t{bits};
 
-            for (auto const i: std::views::reverse(std::views::iota(1uz, total_bits + 1))) {
-                remainder <<= static_cast<std::int8_t>(1);
-                if (this->get_bit(i - 1)) {
-                    remainder += static_cast<std::int8_t>(1);
+            for (auto const i: std::views::reverse(std::views::iota(0uz, total_bits))) {
+                remainder <<= std::int8_t{1};
+                if (this->get_bit(i)) {
+                    remainder += std::int8_t{1};
                 }
 
                 if (remainder >= other) {
@@ -613,20 +622,20 @@ namespace bigint {
 
         template<std::size_t other_bits, bool other_is_signed>
         [[nodiscard]] constexpr bigint operator%(bigint<other_bits, other_is_signed> const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result %= other;
             return result;
         }
 
         constexpr bigint &operator<<=(std::size_t const shift) {
-            static constexpr std::size_t n = bits / CHAR_BIT;
+            static constexpr auto n = std::size_t{bits / CHAR_BIT};
             if (shift == 0) {
                 return *this;
             }
 
-            std::size_t const byte_shift = shift / 8;
-            std::size_t const bit_shift = shift % 8;
-            std::array<std::uint8_t, n> result{};
+            auto const byte_shift = std::size_t{shift / CHAR_BIT};
+            auto const bit_shift = std::size_t{shift % CHAR_BIT};
+            auto result = std::array<std::uint8_t, n>{};
 
             for (auto const i: std::views::iota(0uz, n)) {
                 if constexpr (std::endian::native == std::endian::little) {
@@ -640,10 +649,10 @@ namespace bigint {
                 }
             }
 
-            std::uint16_t carry = 0;
+            auto carry = std::uint16_t{0};
             for (auto const i: std::views::iota(0uz, n)) {
-                std::uint16_t const temp = (static_cast<std::uint16_t>(result[i]) << bit_shift) | carry;
-                result[i] = static_cast<std::uint8_t>(temp & 0xFF);
+                auto const temp = std::uint16_t{(static_cast<std::uint16_t>(result[i]) << bit_shift) | carry};
+                result[i] = std::uint8_t{temp & 0xFF};
                 carry = temp >> 8;
             }
 
@@ -652,18 +661,18 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator<<(std::size_t const shift) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result <<= shift;
             return result;
         }
 
         constexpr bigint &operator>>=(std::size_t const shift) {
-            static constexpr std::size_t n = bits / CHAR_BIT;
+            static constexpr auto n = std::size_t{bits / CHAR_BIT};
             if (shift == 0) {
                 return *this;
             }
 
-            std::uint8_t fill = 0;
+            auto fill = std::uint8_t{0};
             if constexpr (is_signed) {
                 if constexpr (std::endian::native == std::endian::little) {
                     if (data_[n - 1] & 0x80) {
@@ -681,28 +690,32 @@ namespace bigint {
                 return *this;
             }
 
-            std::size_t const byte_shift = shift / 8;
-            std::size_t const bit_shift = shift % 8;
-            std::array<std::uint8_t, n> result{};
+            auto const byte_shift = std::size_t{shift / CHAR_BIT};
+            auto const bit_shift = std::size_t{shift % CHAR_BIT};
+            auto result = std::array<std::uint8_t, n>{};
 
             for (auto const i: std::views::iota(0uz, n)) {
                 if constexpr (std::endian::native == std::endian::little) {
-                    std::uint8_t const lower = (i + byte_shift < n) ? data_[i + byte_shift] : fill;
-                    std::uint8_t const upper = (i + byte_shift + 1 < n) ? data_[i + byte_shift + 1] : fill;
+                    auto const lower = std::uint8_t{(i + byte_shift < n) ? data_[i + byte_shift] : fill};
+                    auto const upper = std::uint8_t{(i + byte_shift + 1 < n) ? data_[i + byte_shift + 1] : fill};
                     if (bit_shift == 0) {
                         result[i] = lower;
                     } else {
-                        result[i] = static_cast<std::uint8_t>((lower >> bit_shift) | (upper << (8 - bit_shift)));
+                        result[i] = std::uint8_t{(lower >> bit_shift) | (upper << (8 - bit_shift))};
                     }
                 } else {
-                    int const src = static_cast<int>(i) - static_cast<int>(byte_shift);
-                    std::uint8_t const lower = (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill;
-                    int const src2 = src - 1;
-                    std::uint8_t const higher = (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill;
+                    auto const src = static_cast<int>(i) - static_cast<int>(byte_shift);
+                    auto const lower = std::uint8_t{
+                        (src >= 0 and static_cast<std::size_t>(src) < n) ? data_[src] : fill
+                    };
+                    auto const src2 = src - 1;
+                    auto const higher = std::uint8_t{
+                        (src2 >= 0 and static_cast<std::size_t>(src2) < n) ? data_[src2] : fill
+                    };
                     if (bit_shift == 0) {
                         result[i] = lower;
                     } else {
-                        result[i] = static_cast<std::uint8_t>((lower >> bit_shift) | (higher << (8 - bit_shift)));
+                        result[i] = std::uint8_t{(lower >> bit_shift) | (higher << (8 - bit_shift))};
                     }
                 }
             }
@@ -712,7 +725,7 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator>>(std::size_t const shift) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result >>= shift;
             return result;
         }
@@ -722,8 +735,7 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator-() const {
-            bigint min_value;
-            min_value.data_.fill(0);
+            auto min_value = bigint{};
             if constexpr (std::endian::native == std::endian::little) {
                 min_value.data_.back() = 0x80;
             } else {
@@ -734,7 +746,7 @@ namespace bigint {
                 throw std::overflow_error("Negation overflow: minimum value cannot be negated");
             }
 
-            bigint result = ~*this;
+            auto result = ~*this;
             result += static_cast<std::int8_t>(1);
             return result;
         }
@@ -745,7 +757,7 @@ namespace bigint {
         }
 
         constexpr bigint operator++(int) {
-            bigint result(*this);
+            auto result = bigint{*this};
             ++*this;
             return result;
         }
@@ -756,13 +768,13 @@ namespace bigint {
         }
 
         constexpr bigint operator--(int) {
-            bigint result(*this);
+            auto result = bigint{*this};
             --*this;
             return result;
         }
 
         [[nodiscard]] constexpr bigint operator&(bigint const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result &= other;
             return result;
         }
@@ -775,7 +787,7 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator|(bigint const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result |= other;
             return result;
         }
@@ -788,7 +800,7 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator^(bigint const &other) const {
-            bigint result(*this);
+            auto result = bigint{*this};
             result ^= other;
             return result;
         }
@@ -801,7 +813,7 @@ namespace bigint {
         }
 
         [[nodiscard]] constexpr bigint operator~() const {
-            bigint result(*this);
+            auto result = bigint{*this};
             for (auto &byte: result.data_) {
                 byte = ~byte;
             }
@@ -824,19 +836,19 @@ namespace bigint {
 
     private:
         [[nodiscard]] constexpr bool get_bit(std::size_t const pos) const {
-            std::size_t const byte_index = pos / 8;
-            std::size_t const bit_index = pos % 8;
+            auto const byte_index = std::size_t{pos / CHAR_BIT};
+            auto const bit_index = std::size_t{pos % CHAR_BIT};
             if constexpr (std::endian::native == std::endian::little) {
                 return (data_[byte_index] >> bit_index) & 1;
             } else {
-                std::size_t const index = data_.size() - 1 - byte_index;
+                auto const index = std::size_t{data_.size() - 1 - byte_index};
                 return (data_[index] >> bit_index) & 1;
             }
         }
 
         constexpr void set_bit(std::size_t const pos, bool const value) {
-            std::size_t const byte_index = pos / 8;
-            std::size_t const bit_index = pos % 8;
+            auto const byte_index = std::size_t{pos / CHAR_BIT};
+            auto const bit_index = std::size_t{pos % CHAR_BIT};
             if constexpr (std::endian::native == std::endian::little) {
                 if (value) {
                     data_[byte_index] |= static_cast<std::uint8_t>(1U << bit_index);
@@ -844,7 +856,7 @@ namespace bigint {
                     data_[byte_index] &= static_cast<std::uint8_t>(~(1U << bit_index));
                 }
             } else {
-                std::size_t const index = data_.size() - 1 - byte_index;
+                auto const index = std::size_t{data_.size() - 1 - byte_index};
                 if (value) {
                     data_[index] |= static_cast<std::uint8_t>(1U << bit_index);
                 } else {
@@ -854,18 +866,18 @@ namespace bigint {
         }
 
         constexpr void multiply_by(std::uint32_t const multiplier) {
-            std::uint32_t carry = 0;
+            auto carry = std::uint32_t{0};
             if constexpr (std::endian::native == std::endian::little) {
                 for (auto const i: std::views::iota(0uz, data_.size())) {
-                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[i]) * multiplier + carry;
-                    data_[i] = static_cast<std::uint8_t>(prod & 0xFF);
+                    auto const prod = std::uint32_t{static_cast<std::uint32_t>(data_[i]) * multiplier + carry};
+                    data_[i] = std::uint8_t{prod & 0xFF};
                     carry = prod >> 8;
                 }
             } else {
                 for (auto const i: std::views::reverse(std::views::iota(1uz, data_.size() + 1))) {
-                    std::size_t const idx = i - 1;
-                    std::uint32_t const prod = static_cast<std::uint32_t>(data_[idx]) * multiplier + carry;
-                    data_[idx] = static_cast<std::uint8_t>(prod & 0xFF);
+                    auto const idx = std::size_t{i - 1};
+                    auto const prod = std::uint32_t{static_cast<std::uint32_t>(data_[idx]) * multiplier + carry};
+                    data_[idx] = std::uint8_t{prod & 0xFF};
                     carry = prod >> 8;
                 }
             }
@@ -875,18 +887,18 @@ namespace bigint {
         }
 
         constexpr void add_value(std::uint8_t const value) {
-            std::uint16_t carry = value;
+            auto carry = std::uint16_t{value};
             if constexpr (std::endian::native == std::endian::little) {
-                for (std::size_t i = 0; i < data_.size() and carry; ++i) {
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[i]) + carry;
-                    data_[i] = static_cast<std::uint8_t>(sum & 0xFF);
+                for (auto i = 0uz; i < data_.size() and carry; ++i) {
+                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[i]) + carry};
+                    data_[i] = std::uint8_t{sum & 0xFF};
                     carry = sum >> 8;
                 }
             } else {
-                for (std::size_t i = data_.size(); i > 0 and carry; --i) {
-                    std::size_t const idx = i - 1;
-                    std::uint16_t const sum = static_cast<std::uint16_t>(data_[idx]) + carry;
-                    data_[idx] = static_cast<std::uint8_t>(sum & 0xFF);
+                for (auto i = data_.size(); i > 0uz and carry; --i) {
+                    auto const idx = std::size_t{i - 1};
+                    auto const sum = std::uint16_t{static_cast<std::uint16_t>(data_[idx]) + carry};
+                    data_[idx] = std::uint8_t{sum & 0xFF};
                     carry = sum >> 8;
                 }
             }
@@ -897,7 +909,7 @@ namespace bigint {
 
         constexpr void init_from_string_base(std::string_view const str, std::uint32_t const base) {
             data_.fill(0);
-            for (char const c: str) {
+            for (auto const c: str) {
                 if (c == '\'' or c == ' ') {
                     continue;
                 }
@@ -976,10 +988,10 @@ namespace bigint {
     template<std::size_t bits, bool is_signed>
     constexpr std::ostream &operator<<(std::ostream &os, bigint<bits, is_signed> const &data) {
         auto const flags = os.flags();
-        std::string result;
+        auto result = std::string{};
 
-        std::ios_base::fmtflags const base_flag = flags & std::ios_base::basefield;
-        bool const use_uppercase = (flags & std::ios_base::uppercase) != 0;
+        auto const base_flag = flags & std::ios_base::basefield;
+        auto const use_uppercase = (flags & std::ios_base::uppercase) != 0;
 
         if (base_flag == std::ios_base::hex) {
             if constexpr (std::endian::native == std::endian::little) {
@@ -987,7 +999,7 @@ namespace bigint {
                     if (result.empty() and data.data_[i - 1] == 0 and i != 1) {
                         continue;
                     }
-                    std::array<char, 3> buffer{};
+                    auto buffer = std::array<char, 3>{};
                     std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i - 1]);
                     result.append(buffer.data());
                 }
@@ -996,34 +1008,34 @@ namespace bigint {
                     if (result.empty() and data.data_[i] == 0 and i != 1) {
                         continue;
                     }
-                    std::array<char, 3> buffer{};
+                    auto buffer = std::array<char, 3>{};
                     std::snprintf(buffer.data(), buffer.size(), use_uppercase ? "%02X" : "%02x", data.data_[i]);
                     result.append(buffer.data());
                 }
             }
         } else if (base_flag == std::ios_base::oct) {
-            bigint<bits, is_signed> temp(data);
-            if (temp == static_cast<std::int8_t>(0)) {
+            auto temp = bigint<bits, is_signed>{data};
+            if (temp == std::int8_t{0}) {
                 result = "0";
             } else {
-                while (temp != static_cast<std::int8_t>(0)) {
-                    bigint<bits, is_signed> r = temp % static_cast<std::int8_t>(8);
-                    int digit = 0;
+                while (temp != std::int8_t{0}) {
+                    auto r = temp % static_cast<std::int8_t>(8);
+                    auto digit = 0;
                     if constexpr (std::endian::native == std::endian::little) {
                         digit = r.data_[0];
                     } else {
                         digit = r.data_[r.data_.size() - 1];
                     }
                     result.push_back('0' + digit);
-                    temp /= static_cast<std::int8_t>(8);
+                    temp /= std::int8_t{8};
                 }
                 std::ranges::reverse(result);
             }
         } else if (base_flag == std::ios_base::dec) {
-            bigint<bits, is_signed> temp(data);
-            bool negative = false;
+            auto temp = bigint<bits, is_signed>{data};
+            auto negative = false;
             if constexpr (is_signed) {
-                if (temp < static_cast<std::int8_t>(0)) {
+                if (temp < std::int8_t{0}) {
                     negative = true;
                     temp = -temp;
                 }
@@ -1032,8 +1044,8 @@ namespace bigint {
                 result = "0";
             } else {
                 while (temp != static_cast<std::int8_t>(0)) {
-                    bigint<bits, is_signed> r = temp % static_cast<std::int8_t>(10);
-                    int digit = 0;
+                    auto r = temp % static_cast<std::int8_t>(10);
+                    auto digit = 0;
                     if constexpr (std::endian::native == std::endian::little) {
                         digit = r.data_[0];
                     } else {
@@ -1054,14 +1066,14 @@ namespace bigint {
 
     template<std::size_t bits, bool is_signed>
     constexpr std::istream &operator>>(std::istream &is, bigint<bits, is_signed> &data) {
-        std::string token;
+        auto token = std::string{};
         if (!(is >> token)) {
             return is;
         }
 
         auto const flags = is.flags();
         auto const base_flag = flags & std::ios_base::basefield;
-        std::uint8_t base = 10;
+        auto base = std::uint8_t{10};
         if (base_flag == std::ios_base::hex) {
             base = 16;
         } else if (base_flag == std::ios_base::oct) {
@@ -1086,7 +1098,7 @@ namespace bigint {
 
     template<std::size_t bits, bool is_signed>
     constexpr bigint<bits, is_signed> byteswap(bigint<bits, is_signed> const &data) {
-        bigint<bits, is_signed> result{data};
+        auto result = bigint<bits, is_signed>{data};
         std::ranges::reverse(result.data_);
         return result;
     }
@@ -1096,7 +1108,7 @@ namespace bigint {
         if constexpr (not is_signed) {
             return data;
         } else {
-            bigint<bits, is_signed> result{data};
+            auto result = bigint<bits, is_signed>{data};
             if (result < static_cast<std::int8_t>(0)) {
                 result = -result;
             }
